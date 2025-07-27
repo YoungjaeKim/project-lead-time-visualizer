@@ -52,7 +52,6 @@ const UserSchema: Schema = new Schema({
   timestamps: true
 });
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ mainOrganization: 1 });
 
 export default mongoose.model<IUserDocument>('User', UserSchema);
