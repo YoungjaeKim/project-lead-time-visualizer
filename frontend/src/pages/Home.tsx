@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Workspace, Project, User, Organization } from '../types';
 import { workspaceApi, userApi, organizationApi, projectApi } from '../services/api';
 import ProjectRow from '../components/ProjectRow';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Home: React.FC = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -328,10 +336,10 @@ const Home: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading workspaces...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading workspaces...</p>
         </div>
       </div>
     );
@@ -339,67 +347,71 @@ const Home: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">Error</div>
-          <p className="text-gray-600">{error}</p>
-          <button 
-            onClick={loadWorkspaces}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Alert variant="destructive" className="max-w-md">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button onClick={loadWorkspaces}>
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-background">
+      <div className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Project Lead Time Visualizer</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Project Lead Time Visualizer</h1>
             
             <div className="flex items-center space-x-4">
               {workspaces.length > 1 && (
-                <select
-                  value={selectedWorkspace?._id || ''}
-                  onChange={(e) => {
-                    const workspace = workspaces.find(w => w._id === e.target.value);
+                <Select 
+                  value={selectedWorkspace?._id || ''} 
+                  onValueChange={(value) => {
+                    const workspace = workspaces.find(w => w._id === value);
                     setSelectedWorkspace(workspace || null);
                   }}
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Select workspace"
                 >
-                  {workspaces.map(workspace => (
-                    <option key={workspace._id} value={workspace._id}>
-                      {workspace.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select workspace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workspaces.map(workspace => (
+                      <SelectItem key={workspace._id} value={workspace._id}>
+                        {workspace.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
               
-              <button
-                onClick={openOrganizationDialog}
-                className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
-              >
-                Add Organization
-              </button>
+              <Dialog open={showCreateOrganizationDialog} onOpenChange={setShowCreateOrganizationDialog}>
+                <DialogTrigger asChild>
+                  <Button onClick={openOrganizationDialog} className="bg-orange-600 hover:bg-orange-700">
+                    Add Organization
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
               
-              <button
-                onClick={openUserDialog}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-              >
-                Add User
-              </button>
+              <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+                <DialogTrigger asChild>
+                  <Button onClick={openUserDialog} className="bg-green-600 hover:bg-green-700">
+                    Add User
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
               
-              <button
-                onClick={openWorkspaceDialog}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              >
-                Add Workspace
-              </button>
+              <Dialog open={showCreateWorkspaceDialog} onOpenChange={setShowCreateWorkspaceDialog}>
+                <DialogTrigger asChild>
+                  <Button onClick={openWorkspaceDialog}>
+                    Add Workspace
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -409,39 +421,46 @@ const Home: React.FC = () => {
         {selectedWorkspace ? (
           <>
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">{selectedWorkspace.name}</h2>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">{selectedWorkspace.name}</h2>
               {selectedWorkspace.description && (
-                <p className="text-gray-600">{selectedWorkspace.description}</p>
+                <p className="text-muted-foreground">{selectedWorkspace.description}</p>
               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="text-2xl font-bold text-blue-600">{getTotalProjects()}</div>
-                <div className="text-gray-600">Total Projects</div>
-              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-2xl font-bold text-blue-600">{getTotalProjects()}</div>
+                  <div className="text-muted-foreground">Total Projects</div>
+                </CardContent>
+              </Card>
               
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="text-2xl font-bold text-green-600">{getActiveProjects()}</div>
-                <div className="text-gray-600">Active Projects</div>
-              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-2xl font-bold text-green-600">{getActiveProjects()}</div>
+                  <div className="text-muted-foreground">Active Projects</div>
+                </CardContent>
+              </Card>
               
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="text-2xl font-bold text-gray-600">{getCompletedProjects()}</div>
-                <div className="text-gray-600">Completed Projects</div>
-              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-2xl font-bold text-muted-foreground">{getCompletedProjects()}</div>
+                  <div className="text-muted-foreground">Completed Projects</div>
+                </CardContent>
+              </Card>
             </div>
 
             {selectedWorkspace.projects && selectedWorkspace.projects.length > 0 ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900">Projects</h3>
-                  <button
-                    onClick={openProjectDialog}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-                  >
-                    Add Project
-                  </button>
+                  <h3 className="text-xl font-semibold">Projects</h3>
+                  <Dialog open={showCreateProjectDialog} onOpenChange={setShowCreateProjectDialog}>
+                    <DialogTrigger asChild>
+                      <Button onClick={openProjectDialog} className="bg-purple-600 hover:bg-purple-700">
+                        Add Project
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
                 </div>
                 <div className="grid gap-4">
                   {selectedWorkspace.projects.map(project => (
@@ -455,633 +474,543 @@ const Home: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="text-gray-400 text-lg mb-4">No projects found</div>
-                <p className="text-gray-600 mb-6">This workspace doesn't have any projects yet.</p>
-                <button
-                  onClick={openProjectDialog}
-                  className="bg-purple-600 text-white px-6 py-3 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-                >
-                  Create Your First Project
-                </button>
+                <div className="text-muted-foreground text-lg mb-4">No projects found</div>
+                <p className="text-muted-foreground mb-6">This workspace doesn't have any projects yet.</p>
+                <Dialog open={showCreateProjectDialog} onOpenChange={setShowCreateProjectDialog}>
+                  <DialogTrigger asChild>
+                    <Button onClick={openProjectDialog} size="lg" className="bg-purple-600 hover:bg-purple-700">
+                      Create Your First Project
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
               </div>
             )}
           </>
         ) : (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-4">No workspaces found</div>
-            <p className="text-gray-600">Create a workspace to get started with project tracking.</p>
-            <div className="mt-4 space-x-4">
-              <button
-                onClick={openOrganizationDialog}
-                className="bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
-              >
-                Create Your First Organization
-              </button>
-              <button
-                onClick={openUserDialog}
-                className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-              >
-                Create Your First User
-              </button>
-              <button
-                onClick={openWorkspaceDialog}
-                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              >
-                Create Your First Workspace
-              </button>
+            <div className="text-muted-foreground text-lg mb-4">No workspaces found</div>
+            <p className="text-muted-foreground mb-6">Create a workspace to get started with project tracking.</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Dialog open={showCreateOrganizationDialog} onOpenChange={setShowCreateOrganizationDialog}>
+                <DialogTrigger asChild>
+                  <Button onClick={openOrganizationDialog} size="lg" className="bg-orange-600 hover:bg-orange-700">
+                    Create Your First Organization
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+              
+              <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+                <DialogTrigger asChild>
+                  <Button onClick={openUserDialog} size="lg" className="bg-green-600 hover:bg-green-700">
+                    Create Your First User
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+              
+              <Dialog open={showCreateWorkspaceDialog} onOpenChange={setShowCreateWorkspaceDialog}>
+                <DialogTrigger asChild>
+                  <Button onClick={openWorkspaceDialog} size="lg">
+                    Create Your First Workspace
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
             </div>
           </div>
         )}
       </div>
 
       {/* Create Workspace Dialog */}
-      {showCreateWorkspaceDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create New Workspace</h3>
-              <button
-                onClick={() => setShowCreateWorkspaceDialog(false)}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                aria-label="Close dialog"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      <Dialog open={showCreateWorkspaceDialog} onOpenChange={setShowCreateWorkspaceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Workspace</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateWorkspace} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="workspace-name">Workspace Name *</Label>
+              <Input
+                id="workspace-name"
+                value={workspaceFormData.name}
+                onChange={(e) => setWorkspaceFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter workspace name"
+                required
+                disabled={createWorkspaceLoading}
+              />
             </div>
             
-            <form onSubmit={handleCreateWorkspace} className="space-y-4">
-              <div>
-                <label htmlFor="workspace-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Workspace Name *
-                </label>
-                <input
-                  id="workspace-name"
-                  type="text"
-                  value={workspaceFormData.name}
-                  onChange={(e) => setWorkspaceFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter workspace name"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <div className="space-y-2">
+              <Label htmlFor="workspace-description">Description</Label>
+              <textarea
+                id="workspace-description"
+                value={workspaceFormData.description}
+                onChange={(e) => setWorkspaceFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter workspace description"
+                rows={3}
+                className="w-full border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                disabled={createWorkspaceLoading}
+                aria-label="Workspace description"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workspace-owner">Owner *</Label>
+              {usersLoading ? (
+                <div className="text-sm text-muted-foreground">Loading users...</div>
+              ) : (
+                <Select 
+                  value={workspaceFormData.owner} 
+                  onValueChange={(value) => setWorkspaceFormData(prev => ({ ...prev, owner: value }))}
                   required
                   disabled={createWorkspaceLoading}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="workspace-description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (Optional)
-                </label>
-                <textarea
-                  id="workspace-description"
-                  value={workspaceFormData.description}
-                  onChange={(e) => setWorkspaceFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter workspace description"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={createWorkspaceLoading}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="workspace-owner" className="block text-sm font-medium text-gray-700 mb-1">
-                  Owner *
-                </label>
-                {usersLoading ? (
-                  <div className="text-sm text-gray-500">Loading users...</div>
-                ) : (
-                  <select
-                    id="workspace-owner"
-                    value={workspaceFormData.owner}
-                    onChange={(e) => setWorkspaceFormData(prev => ({ ...prev, owner: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    disabled={createWorkspaceLoading}
-                  >
-                    <option value="">Select an owner</option>
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an owner" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {users.map(user => (
-                      <option key={user._id} value={user._id}>
+                      <SelectItem key={user._id} value={user._id}>
                         {user.name} ({user.email})
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                )}
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateWorkspaceDialog(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none disabled:opacity-50"
-                  disabled={createWorkspaceLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
-                  disabled={createWorkspaceLoading || !workspaceFormData.name.trim() || !workspaceFormData.owner}
-                >
-                  {createWorkspaceLoading ? 'Creating...' : 'Create Workspace'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreateWorkspaceDialog(false)}
+                disabled={createWorkspaceLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createWorkspaceLoading || !workspaceFormData.name.trim() || !workspaceFormData.owner}
+              >
+                {createWorkspaceLoading ? 'Creating...' : 'Create Workspace'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Create User Dialog */}
-      {showCreateUserDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
-              <button
-                onClick={() => setShowCreateUserDialog(false)}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                aria-label="Close dialog"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="user-name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Name *
-                  </label>
-                  <input
-                    id="user-name"
-                    type="text"
-                    value={userFormData.name}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter user name"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    disabled={createUserLoading}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="user-email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    id="user-email"
-                    type="email"
-                    value={userFormData.email}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter email address"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    disabled={createUserLoading}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="user-password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password *
-                </label>
-                <input
-                  id="user-password"
-                  type="password"
-                  value={userFormData.password}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Enter password"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-name">Name *</Label>
+                <Input
+                  id="user-name"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter user name"
                   required
                   disabled={createUserLoading}
                 />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="user-role" className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
-                  </label>
-                  <input
-                    id="user-role"
-                    type="text"
-                    value={userFormData.role}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, role: e.target.value }))}
-                    placeholder="Enter role (e.g., Developer, Designer)"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    disabled={createUserLoading}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="user-daily-fee" className="block text-sm font-medium text-gray-700 mb-1">
-                    Daily Fee *
-                  </label>
-                  <input
-                    id="user-daily-fee"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={userFormData.dailyFee}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, dailyFee: e.target.value }))}
-                    placeholder="Enter daily fee"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    disabled={createUserLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="user-level" className="block text-sm font-medium text-gray-700 mb-1">
-                    Level *
-                  </label>
-                  <select
-                    id="user-level"
-                    value={userFormData.level}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, level: e.target.value as any }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    disabled={createUserLoading}
-                  >
-                    <option value="">Select level</option>
-                    <option value="Junior">Junior</option>
-                    <option value="Mid">Mid</option>
-                    <option value="Senior">Senior</option>
-                    <option value="Lead">Lead</option>
-                    <option value="Principal">Principal</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label htmlFor="user-organization" className="block text-sm font-medium text-gray-700 mb-1">
-                    Main Organization *
-                  </label>
-                  {organizationsLoading ? (
-                    <div className="text-sm text-gray-500">Loading organizations...</div>
-                  ) : (
-                    <select
-                      id="user-organization"
-                      value={userFormData.mainOrganization}
-                      onChange={(e) => setUserFormData(prev => ({ ...prev, mainOrganization: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                      disabled={createUserLoading}
-                    >
-                      <option value="">Select organization</option>
-                      {organizations.map(org => (
-                        <option key={org._id} value={org._id}>
-                          {org.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Skills (Optional)
-                </label>
-                {userFormData.skills.map((skill, index) => (
-                  <div key={index} className="flex items-center space-x-2 mb-2">
-                    <input
-                      type="text"
-                      value={skill}
-                      onChange={(e) => handleSkillChange(index, e.target.value)}
-                      placeholder="Enter skill"
-                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      disabled={createUserLoading}
-                    />
-                    {userFormData.skills.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeSkillField(index)}
-                        className="text-red-600 hover:text-red-800 focus:outline-none"
-                        disabled={createUserLoading}
-                        aria-label="Remove skill"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addSkillField}
-                  className="text-blue-600 hover:text-blue-800 text-sm focus:outline-none"
-                  disabled={createUserLoading}
-                >
-                  + Add Skill
-                </button>
-              </div>
               
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateUserDialog(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none disabled:opacity-50"
-                  disabled={createUserLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 transition-colors"
-                  disabled={createUserLoading || !userFormData.name.trim() || !userFormData.email.trim() || !userFormData.password.trim() || !userFormData.role.trim() || !userFormData.dailyFee || !userFormData.level || !userFormData.mainOrganization}
-                >
-                  {createUserLoading ? 'Creating...' : 'Create User'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Create Project Dialog */}
-      {showCreateProjectDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
-              <button
-                onClick={() => setShowCreateProjectDialog(false)}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                aria-label="Close dialog"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <form onSubmit={handleCreateProject} className="space-y-4">
-              <div>
-                <label htmlFor="project-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Project Name *
-                </label>
-                <input
-                  id="project-name"
-                  type="text"
-                  value={projectFormData.name}
-                  onChange={(e) => setProjectFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter project name"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              <div className="space-y-2">
+                <Label htmlFor="user-email">Email *</Label>
+                <Input
+                  id="user-email"
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter email address"
                   required
-                  disabled={createProjectLoading}
+                  disabled={createUserLoading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="user-password">Password *</Label>
+              <Input
+                id="user-password"
+                type="password"
+                value={userFormData.password}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Enter password"
+                required
+                disabled={createUserLoading}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-role">Role *</Label>
+                <Input
+                  id="user-role"
+                  value={userFormData.role}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, role: e.target.value }))}
+                  placeholder="Enter role (e.g., Developer, Designer)"
+                  required
+                  disabled={createUserLoading}
                 />
               </div>
               
-              <div>
-                <label htmlFor="project-description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (Optional)
-                </label>
-                <textarea
-                  id="project-description"
-                  value={projectFormData.description}
-                  onChange={(e) => setProjectFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter project description"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  disabled={createProjectLoading}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="project-status" className="block text-sm font-medium text-gray-700 mb-1">
-                    Status *
-                  </label>
-                  <select
-                    id="project-status"
-                    value={projectFormData.status}
-                    onChange={(e) => setProjectFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                    disabled={createProjectLoading}
-                  >
-                    <option value="planning">Planning</option>
-                    <option value="active">Active</option>
-                    <option value="on-hold">On Hold</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label htmlFor="project-start-date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date *
-                  </label>
-                  <input
-                    id="project-start-date"
-                    type="date"
-                    value={projectFormData.startDate}
-                    onChange={(e) => setProjectFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                    disabled={createProjectLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="project-end-date" className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date (Optional)
-                  </label>
-                  <input
-                    id="project-end-date"
-                    type="date"
-                    value={projectFormData.endDate}
-                    onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    disabled={createProjectLoading}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="project-budget" className="block text-sm font-medium text-gray-700 mb-1">
-                    Budget (Optional)
-                  </label>
-                  <input
-                    id="project-budget"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={projectFormData.budget}
-                    onChange={(e) => setProjectFormData(prev => ({ ...prev, budget: e.target.value }))}
-                    placeholder="Enter budget"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    disabled={createProjectLoading}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="project-estimated-cost" className="block text-sm font-medium text-gray-700 mb-1">
-                  Estimated Cost (Optional)
-                </label>
-                <input
-                  id="project-estimated-cost"
+              <div className="space-y-2">
+                <Label htmlFor="user-daily-fee">Daily Fee *</Label>
+                <Input
+                  id="user-daily-fee"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={projectFormData.estimatedCost}
-                  onChange={(e) => setProjectFormData(prev => ({ ...prev, estimatedCost: e.target.value }))}
-                  placeholder="Enter estimated cost"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  disabled={createProjectLoading}
+                  value={userFormData.dailyFee}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, dailyFee: e.target.value }))}
+                  placeholder="Enter daily fee"
+                  required
+                  disabled={createUserLoading}
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Participants (Optional)
-                </label>
-                {usersLoading ? (
-                  <div className="text-sm text-gray-500">Loading users...</div>
-                ) : (
-                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                    {users.map(user => (
-                      <div key={user._id} className="flex items-center space-x-2 mb-1">
-                        <input
-                          type="checkbox"
-                          id={`participant-${user._id}`}
-                          checked={projectFormData.participants.indexOf(user._id) !== -1}
-                          onChange={() => handleParticipantToggle(user._id)}
-                          className="focus:ring-purple-500 h-4 w-4 text-purple-600 border-gray-300 rounded"
-                          disabled={createProjectLoading}
-                        />
-                        <label htmlFor={`participant-${user._id}`} className="text-sm text-gray-700">
-                          {user.name} ({user.email})
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-level">Level *</Label>
+                <Select 
+                  value={userFormData.level} 
+                  onValueChange={(value: any) => setUserFormData(prev => ({ ...prev, level: value }))}
+                  required
+                  disabled={createUserLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Junior">Junior</SelectItem>
+                    <SelectItem value="Mid">Mid</SelectItem>
+                    <SelectItem value="Senior">Senior</SelectItem>
+                    <SelectItem value="Lead">Lead</SelectItem>
+                    <SelectItem value="Principal">Principal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateProjectDialog(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none disabled:opacity-50"
-                  disabled={createProjectLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 transition-colors"
-                  disabled={createProjectLoading || !projectFormData.name.trim() || !projectFormData.startDate}
-                >
-                  {createProjectLoading ? 'Creating...' : 'Create Project'}
-                </button>
+              <div className="space-y-2">
+                <Label htmlFor="user-organization">Main Organization *</Label>
+                {organizationsLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading organizations...</div>
+                ) : (
+                  <Select 
+                    value={userFormData.mainOrganization} 
+                    onValueChange={(value) => setUserFormData(prev => ({ ...prev, mainOrganization: value }))}
+                    required
+                    disabled={createUserLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations.map(org => (
+                        <SelectItem key={org._id} value={org._id}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
 
-      {/* Create Organization Dialog */}
-      {showCreateOrganizationDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create New Organization</h3>
-              <button
-                onClick={() => setShowCreateOrganizationDialog(false)}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                aria-label="Close dialog"
+            <div className="space-y-2">
+              <Label>Skills</Label>
+              {userFormData.skills.map((skill, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Input
+                    value={skill}
+                    onChange={(e) => handleSkillChange(index, e.target.value)}
+                    placeholder="Enter skill"
+                    disabled={createUserLoading}
+                  />
+                  {userFormData.skills.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeSkillField(index)}
+                      disabled={createUserLoading}
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addSkillField}
+                disabled={createUserLoading}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                + Add Skill
+              </Button>
             </div>
             
-            <form onSubmit={handleCreateOrganization} className="space-y-4">
-              <div>
-                <label htmlFor="organization-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization Name *
-                </label>
-                <input
-                  id="organization-name"
-                  type="text"
-                  value={organizationFormData.name}
-                  onChange={(e) => setOrganizationFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter organization name"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  required
-                  disabled={createOrganizationLoading}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="organization-description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (Optional)
-                </label>
-                <textarea
-                  id="organization-description"
-                  value={organizationFormData.description}
-                  onChange={(e) => setOrganizationFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter organization description"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  disabled={createOrganizationLoading}
-                />
-              </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreateUserDialog(false)}
+                disabled={createUserLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700"
+                disabled={createUserLoading || !userFormData.name.trim() || !userFormData.email.trim() || !userFormData.password.trim() || !userFormData.role.trim() || !userFormData.dailyFee || !userFormData.level || !userFormData.mainOrganization}
+              >
+                {createUserLoading ? 'Creating...' : 'Create User'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-              <div>
-                <label htmlFor="organization-parent" className="block text-sm font-medium text-gray-700 mb-1">
-                  Parent Organization (Optional)
-                </label>
-                {organizationsLoading ? (
-                  <div className="text-sm text-gray-500">Loading organizations...</div>
-                ) : (
-                  <select
-                    id="organization-parent"
-                    value={organizationFormData.parentOrganization}
-                    onChange={(e) => setOrganizationFormData(prev => ({ ...prev, parentOrganization: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    disabled={createOrganizationLoading}
-                  >
-                    <option value="">Select parent organization</option>
-                    {organizations.map(org => (
-                      <option key={org._id} value={org._id}>
-                        {org.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+      {/* Create Project Dialog */}
+      <Dialog open={showCreateProjectDialog} onOpenChange={setShowCreateProjectDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateProject} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name *</Label>
+              <Input
+                id="project-name"
+                value={projectFormData.name}
+                onChange={(e) => setProjectFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter project name"
+                required
+                disabled={createProjectLoading}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="project-description">Description</Label>
+              <textarea
+                id="project-description"
+                value={projectFormData.description}
+                onChange={(e) => setProjectFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter project description"
+                rows={3}
+                className="w-full border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                disabled={createProjectLoading}
+                aria-label="Project description"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-status">Status *</Label>
+                <Select 
+                  value={projectFormData.status} 
+                  onValueChange={(value: any) => setProjectFormData(prev => ({ ...prev, status: value }))}
+                  required
+                  disabled={createProjectLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on-hold">On Hold</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateOrganizationDialog(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none disabled:opacity-50"
+              <div className="space-y-2">
+                <Label htmlFor="project-start-date">Start Date *</Label>
+                <Input
+                  id="project-start-date"
+                  type="date"
+                  value={projectFormData.startDate}
+                  onChange={(e) => setProjectFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  required
+                  disabled={createProjectLoading}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-end-date">End Date</Label>
+                <Input
+                  id="project-end-date"
+                  type="date"
+                  value={projectFormData.endDate}
+                  onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                  disabled={createProjectLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="project-budget">Budget</Label>
+                <Input
+                  id="project-budget"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={projectFormData.budget}
+                  onChange={(e) => setProjectFormData(prev => ({ ...prev, budget: e.target.value }))}
+                  placeholder="Enter budget"
+                  disabled={createProjectLoading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="project-estimated-cost">Estimated Cost</Label>
+              <Input
+                id="project-estimated-cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={projectFormData.estimatedCost}
+                onChange={(e) => setProjectFormData(prev => ({ ...prev, estimatedCost: e.target.value }))}
+                placeholder="Enter estimated cost"
+                disabled={createProjectLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Participants</Label>
+              {usersLoading ? (
+                <div className="text-sm text-muted-foreground">Loading users...</div>
+              ) : (
+                <div className="max-h-32 overflow-y-auto border border-input rounded-md p-3 space-y-2">
+                  {users.map(user => (
+                    <div key={user._id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`participant-${user._id}`}
+                        checked={projectFormData.participants.indexOf(user._id) !== -1}
+                        onChange={() => handleParticipantToggle(user._id)}
+                        className="h-4 w-4 text-primary border-input rounded focus:ring-ring"
+                        disabled={createProjectLoading}
+                      />
+                      <Label htmlFor={`participant-${user._id}`} className="text-sm">
+                        {user.name} ({user.email})
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreateProjectDialog(false)}
+                disabled={createProjectLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-purple-600 hover:bg-purple-700"
+                disabled={createProjectLoading || !projectFormData.name.trim() || !projectFormData.startDate}
+              >
+                {createProjectLoading ? 'Creating...' : 'Create Project'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Organization Dialog */}
+      <Dialog open={showCreateOrganizationDialog} onOpenChange={setShowCreateOrganizationDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Organization</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateOrganization} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="organization-name">Organization Name *</Label>
+              <Input
+                id="organization-name"
+                value={organizationFormData.name}
+                onChange={(e) => setOrganizationFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter organization name"
+                required
+                disabled={createOrganizationLoading}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="organization-description">Description</Label>
+              <textarea
+                id="organization-description"
+                value={organizationFormData.description}
+                onChange={(e) => setOrganizationFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter organization description"
+                rows={3}
+                className="w-full border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                disabled={createOrganizationLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="organization-parent">Parent Organization</Label>
+              {organizationsLoading ? (
+                <div className="text-sm text-muted-foreground">Loading organizations...</div>
+              ) : (
+                <Select 
+                  value={organizationFormData.parentOrganization} 
+                  onValueChange={(value) => setOrganizationFormData(prev => ({ ...prev, parentOrganization: value }))}
                   disabled={createOrganizationLoading}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                  disabled={createOrganizationLoading || !organizationFormData.name.trim()}
-                >
-                  {createOrganizationLoading ? 'Creating...' : 'Create Organization'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select parent organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations.map(org => (
+                      <SelectItem key={org._id} value={org._id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreateOrganizationDialog(false)}
+                disabled={createOrganizationLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-orange-600 hover:bg-orange-700"
+                disabled={createOrganizationLoading || !organizationFormData.name.trim()}
+              >
+                {createOrganizationLoading ? 'Creating...' : 'Create Organization'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
