@@ -2,6 +2,9 @@ import React from 'react';
 import { Event, User } from '../types';
 import { formatDate, formatDateTime } from '../utils/dateUtils';
 import { formatCurrency, calculateEventCost } from '../utils/costUtils';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface EventCardProps {
   event: Event;
@@ -12,20 +15,20 @@ interface EventCardProps {
 const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChange }) => {
   const eventCost = calculateEventCost(event, participants);
   
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
-      case 'done': return 'bg-green-100 text-green-800 border-green-200';
-      case 'ongoing': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'notyet': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'done': return 'default';
+      case 'ongoing': return 'secondary';
+      case 'notyet': return 'outline';
+      default: return 'outline';
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeVariant = (type: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (type) {
-      case 'duration': return 'bg-purple-100 text-purple-800';
-      case 'one-time': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'duration': return 'secondary';
+      case 'one-time': return 'outline';
+      default: return 'outline';
     }
   };
 
@@ -39,107 +42,134 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'notyet': return 'Not Yet';
+      case 'ongoing': return 'Ongoing';
+      case 'done': return 'Done';
+      default: return status;
+    }
+  };
+
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{event.title}</h3>
-          {event.description && (
-            <p className="text-gray-600 text-sm mb-2">{event.description}</p>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold leading-none tracking-tight mb-2">{event.title}</h3>
+            {event.description && (
+              <p className="text-sm text-muted-foreground">{event.description}</p>
+            )}
+          </div>
+          
+          <div className="flex flex-col gap-2 ml-4">
+            <Badge variant={getTypeVariant(event.type)} className="capitalize">
+              {event.type}
+            </Badge>
+            
+            <Select 
+              value={event.status} 
+              onValueChange={(value) => onStatusChange(event._id, value as 'done' | 'ongoing' | 'notyet')}
+            >
+              <SelectTrigger className="w-24 h-8">
+                <SelectValue>
+                  <Badge variant={getStatusVariant(event.status)} className="text-xs">
+                    {getStatusLabel(event.status)}
+                  </Badge>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="notyet">Not Yet</SelectItem>
+                <SelectItem value="ongoing">Ongoing</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-1">
+            <span className="text-muted-foreground">Start Date</span>
+            <div className="font-medium">{formatDateTime(event.startDate)}</div>
+          </div>
+          
+          {event.endDate && (
+            <div className="space-y-1">
+              <span className="text-muted-foreground">End Date</span>
+              <div className="font-medium">{formatDateTime(event.endDate)}</div>
+            </div>
+          )}
+          
+          {event.estimatedHours && (
+            <div className="space-y-1">
+              <span className="text-muted-foreground">Estimated Hours</span>
+              <div className="font-medium">{event.estimatedHours}h</div>
+            </div>
+          )}
+          
+          {event.actualHours && (
+            <div className="space-y-1">
+              <span className="text-muted-foreground">Actual Hours</span>
+              <div className="font-medium">{event.actualHours}h</div>
+            </div>
           )}
         </div>
-        
-        <div className="flex flex-col gap-2 ml-4">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(event.type)}`}>
-            {event.type}
-          </span>
-          
-          <select
-            value={event.status}
-            onChange={(e) => onStatusChange(event._id, e.target.value as 'done' | 'ongoing' | 'notyet')}
-            className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(event.status)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          >
-            <option value="notyet">Not Yet</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="done">Done</option>
-          </select>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-        <div>
-          <span className="text-gray-500">Start Date:</span>
-          <div className="font-medium">{formatDateTime(event.startDate)}</div>
-        </div>
-        
-        {event.endDate && (
-          <div>
-            <span className="text-gray-500">End Date:</span>
-            <div className="font-medium">{formatDateTime(event.endDate)}</div>
+        {event.participants && event.participants.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-muted-foreground text-sm">Participants</span>
+            <div className="flex flex-wrap gap-2">
+              {event.participants.map(participantId => {
+                const participant = participants.find(p => p._id === participantId);
+                return participant ? (
+                  <Badge 
+                    key={participantId}
+                    variant="secondary"
+                    className="text-xs"
+                  >
+                    {participant.name}
+                  </Badge>
+                ) : null;
+              })}
+            </div>
           </div>
         )}
-        
-        {event.estimatedHours && (
-          <div>
-            <span className="text-gray-500">Estimated Hours:</span>
-            <div className="font-medium">{event.estimatedHours}h</div>
-          </div>
-        )}
-        
-        {event.actualHours && (
-          <div>
-            <span className="text-gray-500">Actual Hours:</span>
-            <div className="font-medium">{event.actualHours}h</div>
-          </div>
-        )}
-      </div>
 
-      {event.participants && event.participants.length > 0 && (
-        <div className="mb-3">
-          <span className="text-gray-500 text-sm">Participants:</span>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {event.participants.map(participantId => {
-              const participant = participants.find(p => p._id === participantId);
-              return participant ? (
-                <span 
-                  key={participantId}
-                  className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+        {eventCost > 0 && (
+          <div className="p-3 bg-muted rounded-lg">
+            <span className="text-muted-foreground text-sm">Estimated Cost</span>
+            <div className="font-semibold text-lg text-green-600">{formatCurrency(eventCost)}</div>
+          </div>
+        )}
+
+        {event.referenceLinks && event.referenceLinks.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-muted-foreground text-sm">Reference Links</span>
+            <div className="flex flex-wrap gap-2">
+              {event.referenceLinks.map((link, index) => (
+                <a
+                  key={index}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
                 >
-                  {participant.name}
-                </span>
-              ) : null;
-            })}
+                  <Badge 
+                    variant="outline" 
+                    className="hover:bg-accent cursor-pointer transition-colors"
+                  >
+                    <span className="mr-1">{getReferenceTypeIcon(link.type)}</span>
+                    <span>{link.title || link.type}</span>
+                  </Badge>
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      {eventCost > 0 && (
-        <div className="mb-3 p-2 bg-gray-50 rounded">
-          <span className="text-gray-500 text-sm">Estimated Cost:</span>
-          <div className="font-medium text-green-600">{formatCurrency(eventCost)}</div>
-        </div>
-      )}
-
-      {event.referenceLinks && event.referenceLinks.length > 0 && (
-        <div>
-          <span className="text-gray-500 text-sm">Reference Links:</span>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {event.referenceLinks.map((link, index) => (
-              <a
-                key={index}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded transition-colors"
-              >
-                <span>{getReferenceTypeIcon(link.type)}</span>
-                <span>{link.title || link.type}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
