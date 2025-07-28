@@ -173,10 +173,10 @@ const Project: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading project...</p>
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center p-8 bg-white rounded shadow-elevation-16 border border-neutral-200">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-neutral-600 text-sm font-medium">Loading project...</p>
         </div>
       </div>
     );
@@ -184,14 +184,17 @@ const Project: React.FC = () => {
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Alert variant="destructive" className="max-w-md">
-            <AlertDescription>
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-4 bg-white p-8 rounded shadow-elevation-16 border border-neutral-200 max-w-md w-full">
+          <Alert variant="destructive" className="border-red-200 bg-red-50">
+            <AlertDescription className="text-red-800 text-sm">
               {error || 'Project not found'}
             </AlertDescription>
           </Alert>
-          <Button onClick={() => navigate('/')}>
+          <Button 
+            onClick={() => navigate('/')}
+            className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-2 h-8 text-sm"
+          >
             Back to Home
           </Button>
         </div>
@@ -212,47 +215,53 @@ const Project: React.FC = () => {
   const getBudgetStatusColor = (status: string) => {
     switch (status) {
       case 'good': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
+      case 'warning': return 'text-orange-600';
       case 'danger': return 'text-red-600';
-      default: return 'text-muted-foreground';
+      default: return 'text-neutral-600';
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="bg-card shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+    <div className="min-h-screen bg-neutral-50">
+      {/* Fluent 2 Header - Clean and minimal */}
+      <div className="bg-white shadow-elevation-4 border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-14">
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100 rounded px-3 py-1.5 h-8 text-sm font-medium"
             >
               ← Back to Dashboard
             </Button>
             
-            <Badge variant={getStatusVariant(project.status)} className="capitalize">
+            <Badge variant={getStatusVariant(project.status)} className="capitalize px-2 py-1 text-xs font-medium rounded">
               {project.status}
             </Badge>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Fluent 2 Typography - Clean, readable */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{project.name}</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900 mb-2 tracking-normal">
+            {project.name}
+          </h1>
           {project.description && (
-            <p className="text-muted-foreground text-lg">{project.description}</p>
+            <p className="text-neutral-600 text-base max-w-4xl leading-relaxed">{project.description}</p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Activity Overview</CardTitle>
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Main Content */}
+          <div className="xl:col-span-3 space-y-6">
+            {/* Fluent 2 Cards - Clean, elevated */}
+            <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
+              <CardHeader className="bg-blue-600 text-white p-6 border-0">
+                <CardTitle className="text-lg font-semibold">Activity Overview</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <ActivityGrid 
                   events={events} 
                   startDate={adjustedStartDate}
@@ -261,17 +270,18 @@ const Project: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Project Events</CardTitle>
+            {/* Project Events Card */}
+            <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
+              <CardHeader className="bg-purple-600 text-white p-6 border-0">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <CardTitle className="text-lg font-semibold">Project Events</CardTitle>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <Select value={eventFilter} onValueChange={(value: any) => setEventFilter(value)}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-44 bg-white/10 border-white/20 text-white h-8 rounded text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
                         <SelectItem value="all">All Events ({events.length})</SelectItem>
                         <SelectItem value="notyet">Not Yet ({events.filter(e => e.status === 'notyet').length})</SelectItem>
                         <SelectItem value="ongoing">Ongoing ({events.filter(e => e.status === 'ongoing').length})</SelectItem>
@@ -281,17 +291,19 @@ const Project: React.FC = () => {
 
                     <Dialog open={showAddEventDialog} onOpenChange={setShowAddEventDialog}>
                       <DialogTrigger asChild>
-                        <Button>Add Event</Button>
+                        <Button className="bg-white text-purple-600 hover:bg-neutral-50 border-0 rounded font-medium px-4 py-1.5 h-8 text-sm">
+                          Add Event
+                        </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Create New Event</DialogTitle>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-elevation-64 border border-neutral-200">
+                        <DialogHeader className="p-6 pb-0">
+                          <DialogTitle className="text-xl font-semibold text-neutral-900">Create New Event</DialogTitle>
                         </DialogHeader>
                         
-                        <form onSubmit={handleCreateEvent} className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <form onSubmit={handleCreateEvent} className="p-6 pt-4 space-y-5">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="event-title">Title *</Label>
+                              <Label htmlFor="event-title" className="text-sm font-medium text-neutral-900">Title *</Label>
                               <Input
                                 id="event-title"
                                 value={eventFormData.title}
@@ -299,16 +311,17 @@ const Project: React.FC = () => {
                                 placeholder="Enter event title"
                                 required
                                 disabled={createEventLoading}
+                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                               />
                             </div>
                             
                             <div className="space-y-2">
-                              <Label htmlFor="event-type">Type *</Label>
+                              <Label htmlFor="event-type" className="text-sm font-medium text-neutral-900">Type *</Label>
                               <Select value={eventFormData.type} onValueChange={(value: any) => setEventFormData(prev => ({ ...prev, type: value }))}>
-                                <SelectTrigger>
+                                <SelectTrigger className="h-8 rounded border-neutral-300">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
                                   <SelectItem value="one-time">One-time</SelectItem>
                                   <SelectItem value="duration">Duration</SelectItem>
                                 </SelectContent>
@@ -317,27 +330,27 @@ const Project: React.FC = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="event-description">Description</Label>
+                            <Label htmlFor="event-description" className="text-sm font-medium text-neutral-900">Description</Label>
                             <textarea
                               id="event-description"
                               value={eventFormData.description}
                               onChange={(e) => setEventFormData(prev => ({ ...prev, description: e.target.value }))}
                               placeholder="Enter event description"
                               rows={3}
-                              className="w-full border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                              className="w-full border border-neutral-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 resize-none text-sm"
                               disabled={createEventLoading}
                               aria-label="Event description"
                             />
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="event-status">Status *</Label>
+                              <Label htmlFor="event-status" className="text-sm font-medium text-neutral-900">Status *</Label>
                               <Select value={eventFormData.status} onValueChange={(value: any) => setEventFormData(prev => ({ ...prev, status: value }))}>
-                                <SelectTrigger>
+                                <SelectTrigger className="h-8 rounded border-neutral-300">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
                                   <SelectItem value="notyet">Not Yet</SelectItem>
                                   <SelectItem value="ongoing">Ongoing</SelectItem>
                                   <SelectItem value="done">Done</SelectItem>
@@ -346,7 +359,7 @@ const Project: React.FC = () => {
                             </div>
                             
                             <div className="space-y-2">
-                              <Label htmlFor="event-start-date">Start Date *</Label>
+                              <Label htmlFor="event-start-date" className="text-sm font-medium text-neutral-900">Start Date *</Label>
                               <Input
                                 id="event-start-date"
                                 type="datetime-local"
@@ -354,24 +367,26 @@ const Project: React.FC = () => {
                                 onChange={(e) => setEventFormData(prev => ({ ...prev, startDate: e.target.value }))}
                                 required
                                 disabled={createEventLoading}
+                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                               />
                             </div>
                             
                             <div className="space-y-2">
-                              <Label htmlFor="event-end-date">End Date</Label>
+                              <Label htmlFor="event-end-date" className="text-sm font-medium text-neutral-900">End Date</Label>
                               <Input
                                 id="event-end-date"
                                 type="datetime-local"
                                 value={eventFormData.endDate}
                                 onChange={(e) => setEventFormData(prev => ({ ...prev, endDate: e.target.value }))}
                                 disabled={createEventLoading}
+                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                               />
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="event-estimated-hours">Estimated Hours</Label>
+                              <Label htmlFor="event-estimated-hours" className="text-sm font-medium text-neutral-900">Estimated Hours</Label>
                               <Input
                                 id="event-estimated-hours"
                                 type="number"
@@ -381,11 +396,12 @@ const Project: React.FC = () => {
                                 onChange={(e) => setEventFormData(prev => ({ ...prev, estimatedHours: e.target.value }))}
                                 placeholder="Enter estimated hours"
                                 disabled={createEventLoading}
+                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                               />
                             </div>
                             
                             <div className="space-y-2">
-                              <Label htmlFor="event-actual-hours">Actual Hours</Label>
+                              <Label htmlFor="event-actual-hours" className="text-sm font-medium text-neutral-900">Actual Hours</Label>
                               <Input
                                 id="event-actual-hours"
                                 type="number"
@@ -395,13 +411,14 @@ const Project: React.FC = () => {
                                 onChange={(e) => setEventFormData(prev => ({ ...prev, actualHours: e.target.value }))}
                                 placeholder="Enter actual hours"
                                 disabled={createEventLoading}
+                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                               />
                             </div>
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Participants</Label>
-                            <div className="max-h-32 overflow-y-auto border border-input rounded-md p-3 space-y-2">
+                            <Label className="text-sm font-medium text-neutral-900">Participants</Label>
+                            <div className="max-h-32 overflow-y-auto border border-neutral-300 rounded p-3 space-y-2 bg-neutral-50">
                               {allUsers.map(user => (
                                 <div key={user._id} className="flex items-center space-x-2">
                                   <input
@@ -409,10 +426,15 @@ const Project: React.FC = () => {
                                     id={`event-participant-${user._id}`}
                                     checked={eventFormData.participants.indexOf(user._id) !== -1}
                                     onChange={() => handleParticipantToggle(user._id)}
-                                    className="h-4 w-4 text-primary border-input rounded focus:ring-ring"
+                                    className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
                                     disabled={createEventLoading}
+                                    aria-labelledby={`event-participant-label-${user._id}`}
                                   />
-                                  <Label htmlFor={`event-participant-${user._id}`} className="text-sm">
+                                  <Label 
+                                    htmlFor={`event-participant-${user._id}`} 
+                                    id={`event-participant-label-${user._id}`}
+                                    className="text-sm text-neutral-700 cursor-pointer"
+                                  >
                                     {user.name} ({user.email})
                                   </Label>
                                 </div>
@@ -421,7 +443,7 @@ const Project: React.FC = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Reference Links</Label>
+                            <Label className="text-sm font-medium text-neutral-900">Reference Links</Label>
                             {eventFormData.referenceLinks.map((link, index) => (
                               <div key={index} className="grid grid-cols-12 gap-2 items-end">
                                 <div className="col-span-4">
@@ -431,6 +453,7 @@ const Project: React.FC = () => {
                                     onChange={(e) => handleReferenceLinkChange(index, 'title', e.target.value)}
                                     disabled={createEventLoading}
                                     aria-label={`Reference link ${index + 1} title`}
+                                    className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                                   />
                                 </div>
                                 <div className="col-span-4">
@@ -440,14 +463,15 @@ const Project: React.FC = () => {
                                     onChange={(e) => handleReferenceLinkChange(index, 'url', e.target.value)}
                                     disabled={createEventLoading}
                                     aria-label={`Reference link ${index + 1} URL`}
+                                    className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                                   />
                                 </div>
                                 <div className="col-span-3">
                                   <Select value={link.type} onValueChange={(value: any) => handleReferenceLinkChange(index, 'type', value)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="rounded border-neutral-300 h-8">
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
                                       <SelectItem value="jira">Jira</SelectItem>
                                       <SelectItem value="github">GitHub</SelectItem>
                                       <SelectItem value="confluence">Confluence</SelectItem>
@@ -463,6 +487,7 @@ const Project: React.FC = () => {
                                       size="sm"
                                       onClick={() => removeReferenceLink(index)}
                                       disabled={createEventLoading}
+                                      className="h-8 w-8 rounded hover:bg-red-50 hover:text-red-600 p-0"
                                     >
                                       ×
                                     </Button>
@@ -476,23 +501,26 @@ const Project: React.FC = () => {
                               size="sm"
                               onClick={addReferenceLink}
                               disabled={createEventLoading}
+                              className="rounded border-neutral-300 hover:bg-neutral-50 h-8 text-sm"
                             >
                               + Add Link
                             </Button>
                           </div>
                           
-                          <div className="flex justify-end space-x-3 pt-4">
+                          <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
                             <Button
                               type="button"
                               variant="outline"
                               onClick={() => setShowAddEventDialog(false)}
                               disabled={createEventLoading}
+                              className="rounded px-4 py-1.5 h-8 text-sm border-neutral-300 hover:bg-neutral-50"
                             >
                               Cancel
                             </Button>
                             <Button
                               type="submit"
                               disabled={createEventLoading || !eventFormData.title.trim() || !eventFormData.startDate}
+                              className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
                             >
                               {createEventLoading ? 'Creating...' : 'Create Event'}
                             </Button>
@@ -504,7 +532,7 @@ const Project: React.FC = () => {
                 </div>
               </CardHeader>
               
-              <CardContent>
+              <CardContent className="p-6">
                 <div className="space-y-4">
                   {getFilteredEvents().length > 0 ? (
                     getFilteredEvents().map(event => (
@@ -516,9 +544,9 @@ const Project: React.FC = () => {
                       />
                     ))
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="text-muted-foreground text-lg mb-2">No events found</div>
-                      <p className="text-muted-foreground">
+                    <div className="text-center py-12">
+                      <div className="text-neutral-500 text-base mb-2">No events found</div>
+                      <p className="text-neutral-400 text-sm">
                         {eventFilter === 'all' 
                           ? 'This project doesn\'t have any events yet.'
                           : `No events with status "${eventFilter}" found.`
@@ -531,62 +559,65 @@ const Project: React.FC = () => {
             </Card>
           </div>
 
+          {/* Sidebar */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Details</CardTitle>
+            {/* Project Details Card */}
+            <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
+              <CardHeader className="bg-green-600 text-white p-4 border-0">
+                <CardTitle className="text-base font-semibold">Project Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="p-4 space-y-4 text-sm">
                 <div className="space-y-1">
-                  <span className="text-muted-foreground">Start Date</span>
-                  <div className="font-medium">{formatDate(project.startDate)}</div>
+                  <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Start Date</span>
+                  <div className="font-medium text-neutral-900">{formatDate(project.startDate)}</div>
                 </div>
                 
                 {project.endDate && (
                   <div className="space-y-1">
-                    <span className="text-muted-foreground">End Date</span>
-                    <div className="font-medium">{formatDate(project.endDate)}</div>
+                    <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">End Date</span>
+                    <div className="font-medium text-neutral-900">{formatDate(project.endDate)}</div>
                   </div>
                 )}
                 
                 <div className="space-y-1">
-                  <span className="text-muted-foreground">Participants</span>
-                  <div className="font-medium">{project.participants?.length || 0}</div>
+                  <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Participants</span>
+                  <div className="font-medium text-neutral-900">{project.participants?.length || 0}</div>
                 </div>
                 
                 <div className="space-y-1">
-                  <span className="text-muted-foreground">Total Events</span>
-                  <div className="font-medium">{events.length}</div>
+                  <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Total Events</span>
+                  <div className="font-medium text-neutral-900">{events.length}</div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost Analysis</CardTitle>
+            {/* Cost Analysis Card */}
+            <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
+              <CardHeader className="bg-orange-600 text-white p-4 border-0">
+                <CardTitle className="text-base font-semibold">Cost Analysis</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="p-4 space-y-4 text-sm">
                 <div className="space-y-1">
-                  <span className="text-muted-foreground">Actual Cost</span>
-                  <div className="font-semibold text-lg">{formatCurrency(actualCost)}</div>
+                  <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Actual Cost</span>
+                  <div className="font-semibold text-lg text-neutral-900">{formatCurrency(actualCost)}</div>
                 </div>
                 
                 {project.estimatedCost && (
                   <div className="space-y-1">
-                    <span className="text-muted-foreground">Estimated Cost</span>
-                    <div className="font-medium">{formatCurrency(project.estimatedCost)}</div>
+                    <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Estimated Cost</span>
+                    <div className="font-medium text-neutral-900">{formatCurrency(project.estimatedCost)}</div>
                   </div>
                 )}
                 
                 {project.budget && (
                   <>
                     <div className="space-y-1">
-                      <span className="text-muted-foreground">Budget</span>
-                      <div className="font-medium">{formatCurrency(project.budget)}</div>
+                      <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Budget</span>
+                      <div className="font-medium text-neutral-900">{formatCurrency(project.budget)}</div>
                     </div>
                     
                     <div className="space-y-1">
-                      <span className="text-muted-foreground">Budget Usage</span>
+                      <span className="text-neutral-500 text-xs font-medium uppercase tracking-wide">Budget Usage</span>
                       <div className={`font-medium ${getBudgetStatusColor(budgetStatus)}`}>
                         {budgetUsage.toFixed(1)}%
                       </div>
@@ -596,21 +627,22 @@ const Project: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Team Members */}
             {project.participants && project.participants.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Team Members</CardTitle>
+              <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
+                <CardHeader className="bg-purple-600 text-white p-4 border-0">
+                  <CardTitle className="text-base font-semibold">Team Members</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="p-4 space-y-3">
                   {project.participants.map(participant => (
-                    <div key={participant._id} className="flex items-center justify-between">
+                    <div key={participant._id} className="flex items-center justify-between p-3 bg-neutral-50 rounded">
                       <div>
-                        <div className="font-medium">{participant.name}</div>
-                        <div className="text-sm text-muted-foreground">{participant.role}</div>
+                        <div className="font-medium text-neutral-900 text-sm">{participant.name}</div>
+                        <div className="text-xs text-neutral-500">{participant.role}</div>
                       </div>
-                      <div className="text-sm text-right">
-                        <div className="text-muted-foreground">{participant.level}</div>
-                        <div className="font-medium">{formatCurrency(participant.dailyFee)}/day</div>
+                      <div className="text-right">
+                        <div className="text-xs text-neutral-500">{participant.level}</div>
+                        <div className="font-medium text-neutral-900 text-sm">{formatCurrency(participant.dailyFee)}/day</div>
                       </div>
                     </div>
                   ))}
