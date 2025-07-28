@@ -272,7 +272,7 @@ const Project: React.FC = () => {
 
             {/* Project Events Card */}
             <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
-              <CardHeader className="bg-purple-600 text-white p-6 border-0">
+              <CardHeader className="bg-blue-600 text-white p-6 border-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <CardTitle className="text-lg font-semibold">Project Events</CardTitle>
                   
@@ -281,7 +281,7 @@ const Project: React.FC = () => {
                       <SelectTrigger className="w-full sm:w-44 bg-white/10 border-white/20 text-white h-8 rounded text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                      <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                         <SelectItem value="all">All Events ({events.length})</SelectItem>
                         <SelectItem value="notyet">Not Yet ({events.filter(e => e.status === 'notyet').length})</SelectItem>
                         <SelectItem value="ongoing">Ongoing ({events.filter(e => e.status === 'ongoing').length})</SelectItem>
@@ -291,7 +291,7 @@ const Project: React.FC = () => {
 
                     <Dialog open={showAddEventDialog} onOpenChange={setShowAddEventDialog}>
                       <DialogTrigger asChild>
-                        <Button className="bg-white text-purple-600 hover:bg-neutral-50 border-0 rounded font-medium px-4 py-1.5 h-8 text-sm">
+                        <Button className="bg-white text-blue-600 hover:bg-neutral-50 border-0 rounded font-medium px-4 py-1.5 h-8 text-sm">
                           Add Event
                         </Button>
                       </DialogTrigger>
@@ -321,7 +321,7 @@ const Project: React.FC = () => {
                                 <SelectTrigger className="h-8 rounded border-neutral-300">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                                <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                                   <SelectItem value="one-time">One-time</SelectItem>
                                   <SelectItem value="duration">Duration</SelectItem>
                                 </SelectContent>
@@ -350,7 +350,7 @@ const Project: React.FC = () => {
                                 <SelectTrigger className="h-8 rounded border-neutral-300">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                                <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                                   <SelectItem value="notyet">Not Yet</SelectItem>
                                   <SelectItem value="ongoing">Ongoing</SelectItem>
                                   <SelectItem value="done">Done</SelectItem>
@@ -429,6 +429,7 @@ const Project: React.FC = () => {
                                     className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
                                     disabled={createEventLoading}
                                     aria-labelledby={`event-participant-label-${user._id}`}
+                                    title={`Select ${user.name} as participant`}
                                   />
                                   <Label 
                                     htmlFor={`event-participant-${user._id}`} 
@@ -471,7 +472,7 @@ const Project: React.FC = () => {
                                     <SelectTrigger className="rounded border-neutral-300 h-8">
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                                    <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                                       <SelectItem value="jira">Jira</SelectItem>
                                       <SelectItem value="github">GitHub</SelectItem>
                                       <SelectItem value="confluence">Confluence</SelectItem>
@@ -563,7 +564,7 @@ const Project: React.FC = () => {
           <div className="space-y-6">
             {/* Project Details Card */}
             <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
-              <CardHeader className="bg-green-600 text-white p-4 border-0">
+              <CardHeader className="bg-blue-800 text-white p-4 border-0">
                 <CardTitle className="text-base font-semibold">Project Details</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4 text-sm">
@@ -593,7 +594,7 @@ const Project: React.FC = () => {
 
             {/* Cost Analysis Card */}
             <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
-              <CardHeader className="bg-orange-600 text-white p-4 border-0">
+              <CardHeader className="bg-blue-800 text-white p-4 border-0">
                 <CardTitle className="text-base font-semibold">Cost Analysis</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4 text-sm">
@@ -630,7 +631,7 @@ const Project: React.FC = () => {
             {/* Team Members */}
             {project.participants && project.participants.length > 0 && (
               <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
-                <CardHeader className="bg-purple-600 text-white p-4 border-0">
+                <CardHeader className="bg-blue-800 text-white p-4 border-0">
                   <CardTitle className="text-base font-semibold">Team Members</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">

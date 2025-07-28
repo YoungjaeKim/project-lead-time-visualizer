@@ -399,7 +399,7 @@ const Home: React.FC = () => {
                 <DialogTrigger asChild>
                   <Button 
                     onClick={openOrganizationDialog} 
-                    className="bg-orange-600 hover:bg-orange-700 text-white border-0 rounded font-medium px-3 py-1.5 h-8 text-sm"
+                    className="bg-blue-800 hover:bg-blue-900 text-white border-0 rounded font-medium px-3 py-1.5 h-8 text-sm"
                   >
                     Add Organization
                   </Button>
@@ -410,7 +410,7 @@ const Home: React.FC = () => {
                 <DialogTrigger asChild>
                   <Button 
                     onClick={openUserDialog} 
-                    className="bg-green-600 hover:bg-green-700 text-white border-0 rounded font-medium px-3 py-1.5 h-8 text-sm"
+                    className="bg-blue-800 hover:bg-blue-900 text-white border-0 rounded font-medium px-3 py-1.5 h-8 text-sm"
                   >
                     Add User
                   </Button>
@@ -456,7 +456,7 @@ const Home: React.FC = () => {
               
               <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
                 <CardContent className="p-6 text-center">
-                  <div className="text-2xl font-semibold text-green-600 mb-1">{getActiveProjects()}</div>
+                  <div className="text-2xl font-semibold text-blue-600 mb-1">{getActiveProjects()}</div>
                   <div className="text-neutral-600 text-sm font-medium">Active Projects</div>
                 </CardContent>
               </Card>
@@ -478,7 +478,7 @@ const Home: React.FC = () => {
                     <DialogTrigger asChild>
                       <Button 
                         onClick={openProjectDialog} 
-                        className="bg-purple-600 hover:bg-purple-700 text-white border-0 rounded font-medium px-4 py-2 h-9 text-sm"
+                        className="bg-blue-900 hover:bg-blue-950 text-white border-0 rounded font-medium px-4 py-2 h-9 text-sm"
                       >
                         Add Project
                       </Button>
@@ -503,7 +503,7 @@ const Home: React.FC = () => {
                   <DialogTrigger asChild>
                     <Button 
                       onClick={openProjectDialog} 
-                      className="bg-purple-600 hover:bg-purple-700 text-white border-0 rounded font-medium px-6 py-3 h-10 text-sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-6 py-3 h-10 text-sm"
                     >
                       Create Your First Project
                     </Button>
@@ -521,7 +521,7 @@ const Home: React.FC = () => {
                 <DialogTrigger asChild>
                   <Button 
                     onClick={openOrganizationDialog} 
-                    className="bg-orange-600 hover:bg-orange-700 text-white border-0 rounded font-medium px-6 py-3 h-10 text-sm"
+                    className="bg-blue-800 hover:bg-blue-900 text-white border-0 rounded font-medium px-6 py-3 h-10 text-sm"
                   >
                     Create Your First Organization
                   </Button>
@@ -532,7 +532,7 @@ const Home: React.FC = () => {
                 <DialogTrigger asChild>
                   <Button 
                     onClick={openUserDialog} 
-                    className="bg-green-600 hover:bg-green-700 text-white border-0 rounded font-medium px-6 py-3 h-10 text-sm"
+                    className="bg-blue-800 hover:bg-blue-900 text-white border-0 rounded font-medium px-6 py-3 h-10 text-sm"
                   >
                     Create Your First User
                   </Button>
@@ -603,7 +603,7 @@ const Home: React.FC = () => {
                   <SelectTrigger className="h-8 rounded border-neutral-300">
                     <SelectValue placeholder="Select an owner" />
                   </SelectTrigger>
-                  <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                     {users.map(user => (
                       <SelectItem key={user._id} value={user._id}>
                         {user.name} ({user.email})
@@ -730,13 +730,13 @@ const Home: React.FC = () => {
                   <SelectTrigger className="h-8 rounded border-neutral-300">
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
-                  <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
-                    <SelectItem value="Junior">Junior</SelectItem>
-                    <SelectItem value="Mid">Mid</SelectItem>
-                    <SelectItem value="Senior">Senior</SelectItem>
-                    <SelectItem value="Lead">Lead</SelectItem>
-                    <SelectItem value="Principal">Principal</SelectItem>
-                  </SelectContent>
+                                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
+                  <SelectItem value="Junior">Junior</SelectItem>
+                  <SelectItem value="Mid">Mid</SelectItem>
+                  <SelectItem value="Senior">Senior</SelectItem>
+                  <SelectItem value="Lead">Lead</SelectItem>
+                  <SelectItem value="Principal">Principal</SelectItem>
+                </SelectContent>
                 </Select>
               </div>
               
@@ -754,7 +754,7 @@ const Home: React.FC = () => {
                     <SelectTrigger className="h-8 rounded border-neutral-300">
                       <SelectValue placeholder="Select organization" />
                     </SelectTrigger>
-                    <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                    <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                       {organizations.map(org => (
                         <SelectItem key={org._id} value={org._id}>
                           {org.name}
@@ -815,7 +815,7 @@ const Home: React.FC = () => {
               </Button>
               <Button
                 type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
                 disabled={createUserLoading || !userFormData.name.trim() || !userFormData.email.trim() || !userFormData.password.trim() || !userFormData.role.trim() || !userFormData.dailyFee || !userFormData.level || !userFormData.mainOrganization}
               >
                 {createUserLoading ? 'Creating...' : 'Create User'}
@@ -872,7 +872,7 @@ const Home: React.FC = () => {
                   <SelectTrigger className="h-8 rounded border-neutral-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                     <SelectItem value="planning">Planning</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="on-hold">On Hold</SelectItem>
@@ -983,7 +983,7 @@ const Home: React.FC = () => {
               </Button>
               <Button
                 type="submit"
-                className="bg-purple-600 hover:bg-purple-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
                 disabled={createProjectLoading || !projectFormData.name.trim() || !projectFormData.startDate}
               >
                 {createProjectLoading ? 'Creating...' : 'Create Project'}
@@ -1040,7 +1040,7 @@ const Home: React.FC = () => {
                   <SelectTrigger className="h-8 rounded border-neutral-300">
                     <SelectValue placeholder="Select parent organization" />
                   </SelectTrigger>
-                  <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                     {organizations.map(org => (
                       <SelectItem key={org._id} value={org._id}>
                         {org.name}
@@ -1063,7 +1063,7 @@ const Home: React.FC = () => {
               </Button>
               <Button
                 type="submit"
-                className="bg-orange-600 hover:bg-orange-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
                 disabled={createOrganizationLoading || !organizationFormData.name.trim()}
               >
                 {createOrganizationLoading ? 'Creating...' : 'Create Organization'}
