@@ -38,11 +38,10 @@ export class ExternalSourceService {
     for (const mapping of projectMappings) {
       try {
         const response = await axios.get(
-          `${baseUrl}/rest/api/2/search?jql=project=${mapping.externalId}`,
+          `${baseUrl}/rest/api/2/issue/${mapping.externalId}`,
           {
-            auth: {
-              username: credentials.username,
-              password: credentials.token
+            headers: {
+              Authorization: `Bearer ${credentials.token}`
             }
           }
         );
@@ -108,9 +107,8 @@ export class ExternalSourceService {
         const response = await axios.get(
           `${baseUrl}/wiki/rest/api/content?spaceKey=${mapping.externalId}`,
           {
-            auth: {
-              username: credentials.username,
-              password: credentials.token
+            headers: {
+              Authorization: `Bearer ${credentials.token}`
             }
           }
         );

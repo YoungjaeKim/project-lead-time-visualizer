@@ -1129,7 +1129,7 @@ const Project: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="external-source-username" className="text-sm font-medium text-neutral-900">Username/Email</Label>
+                <Label htmlFor="external-source-username" className="text-sm font-medium text-neutral-900">Username/Email (Optional)</Label>
                 <Input
                   id="external-source-username"
                   value={externalSourceFormData.credentials.username}
@@ -1137,7 +1137,7 @@ const Project: React.FC = () => {
                     ...prev, 
                     credentials: { ...prev.credentials, username: e.target.value }
                   }))}
-                  placeholder="Your username or email"
+                  placeholder="Leave empty for token-only authentication"
                   disabled={createExternalSourceLoading}
                   className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                 />
@@ -1159,7 +1159,7 @@ const Project: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="external-source-token" className="text-sm font-medium text-neutral-900">API Token/Key *</Label>
+              <Label htmlFor="external-source-token" className="text-sm font-medium text-neutral-900">Bearer Token *</Label>
               <Input
                 id="external-source-token"
                 type="password"
@@ -1168,7 +1168,7 @@ const Project: React.FC = () => {
                   ...prev, 
                   credentials: { ...prev.credentials, token: e.target.value }
                 }))}
-                placeholder="Your API token or personal access token"
+                placeholder="Your Bearer token or personal access token"
                 required
                 disabled={createExternalSourceLoading}
                 className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
@@ -1301,7 +1301,7 @@ const Project: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-external-source-username" className="text-sm font-medium text-neutral-900">Username/Email</Label>
+                <Label htmlFor="edit-external-source-username" className="text-sm font-medium text-neutral-900">Username/Email (Optional)</Label>
                 <Input
                   id="edit-external-source-username"
                   value={externalSourceFormData.credentials.username}
@@ -1309,7 +1309,7 @@ const Project: React.FC = () => {
                     ...prev, 
                     credentials: { ...prev.credentials, username: e.target.value }
                   }))}
-                  placeholder="Your username or email"
+                  placeholder="Leave empty for token-only authentication"
                   disabled={createExternalSourceLoading}
                   className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                 />
@@ -1331,7 +1331,7 @@ const Project: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-external-source-token" className="text-sm font-medium text-neutral-900">API Token/Key *</Label>
+              <Label htmlFor="edit-external-source-token" className="text-sm font-medium text-neutral-900">Bearer Token *</Label>
               <Input
                 id="edit-external-source-token"
                 type="password"
@@ -1340,7 +1340,7 @@ const Project: React.FC = () => {
                   ...prev, 
                   credentials: { ...prev.credentials, token: e.target.value }
                 }))}
-                placeholder="Your API token or personal access token"
+                placeholder="Your Bearer token or personal access token"
                 required
                 disabled={createExternalSourceLoading}
                 className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"

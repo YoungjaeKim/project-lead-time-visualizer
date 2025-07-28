@@ -16,7 +16,13 @@ export const getWorkspaces = async (req: Request, res: Response) => {
     const workspaces = await Workspace.find()
       .populate('owner', 'name email')
       .populate('members', 'name email')
-      .populate('projects', 'name status startDate endDate');
+      .populate({
+        path: 'projects',
+        populate: {
+          path: 'participants events',
+          select: 'name email role dailyFee level title status startDate endDate type'
+        }
+      });
     res.json(workspaces);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
