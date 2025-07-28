@@ -58,7 +58,8 @@ const Project: React.FC = () => {
       apiKey: ''
     },
     syncFrequency: 24,
-    externalId: ''
+    externalId: '',
+    isActive: true
   });
 
   useEffect(() => {
@@ -122,7 +123,7 @@ const Project: React.FC = () => {
           apiKey: externalSourceFormData.credentials.apiKey.trim() || undefined
         },
         syncFrequency: externalSourceFormData.syncFrequency,
-        isActive: true,
+        isActive: externalSourceFormData.isActive,
         projectMappings: [{
           externalId: externalSourceFormData.externalId.trim(),
           internalProjectId: project._id
@@ -173,6 +174,7 @@ const Project: React.FC = () => {
           apiKey: externalSourceFormData.credentials.apiKey.trim() || undefined
         },
         syncFrequency: externalSourceFormData.syncFrequency,
+        isActive: externalSourceFormData.isActive,
         projectMappings: updatedMappings
       };
       
@@ -257,7 +259,8 @@ const Project: React.FC = () => {
         apiKey: ''
       },
       syncFrequency: externalSource.syncFrequency,
-      externalId: projectMapping?.externalId || ''
+      externalId: projectMapping?.externalId || '',
+      isActive: externalSource.isActive
     });
     setShowEditExternalSourceDialog(true);
   };
@@ -273,7 +276,8 @@ const Project: React.FC = () => {
         apiKey: ''
       },
       syncFrequency: 24,
-      externalId: ''
+      externalId: '',
+      isActive: true
     });
   };
 
@@ -986,8 +990,17 @@ const Project: React.FC = () => {
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                               <span className="text-base">{getExternalSourceIcon(source.type)}</span>
-                              <div>
-                                <div className="font-medium text-neutral-900 text-sm">{source.name}</div>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <div className="font-medium text-neutral-900 text-sm">{source.name}</div>
+                                  <div className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                                    source.isActive 
+                                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                                      : 'bg-red-100 text-red-700 border border-red-200'
+                                  }`}>
+                                    {source.isActive ? 'Active' : 'Disabled'}
+                                  </div>
+                                </div>
                                 <div className="text-xs text-neutral-500 capitalize">{source.type}</div>
                               </div>
                             </div>
@@ -1177,6 +1190,24 @@ const Project: React.FC = () => {
                 className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
               />
             </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="external-source-active"
+                checked={externalSourceFormData.isActive}
+                onChange={(e) => setExternalSourceFormData(prev => ({ 
+                  ...prev, 
+                  isActive: e.target.checked 
+                }))}
+                disabled={createExternalSourceLoading}
+                className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
+                title="Enable external source for syncing"
+              />
+              <Label htmlFor="external-source-active" className="text-sm font-medium text-neutral-900 cursor-pointer">
+                Active to Sync
+              </Label>
+            </div>
             
             <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
               <Button
@@ -1330,6 +1361,24 @@ const Project: React.FC = () => {
                 disabled={createExternalSourceLoading}
                 className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
               />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="edit-external-source-active"
+                checked={externalSourceFormData.isActive}
+                onChange={(e) => setExternalSourceFormData(prev => ({ 
+                  ...prev, 
+                  isActive: e.target.checked 
+                }))}
+                disabled={createExternalSourceLoading}
+                className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
+                title="Enable external source for syncing"
+              />
+              <Label htmlFor="edit-external-source-active" className="text-sm font-medium text-neutral-900 cursor-pointer">
+                Enable external source
+              </Label>
             </div>
             
             <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
