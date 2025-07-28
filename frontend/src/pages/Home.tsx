@@ -385,7 +385,7 @@ const Home: React.FC = () => {
                   <SelectTrigger className="w-full sm:w-48 rounded border-neutral-300 h-8 text-sm">
                     <SelectValue placeholder="Select workspace" />
                   </SelectTrigger>
-                  <SelectContent className="border border-neutral-200 rounded shadow-elevation-16">
+                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                     {workspaces.map(workspace => (
                       <SelectItem key={workspace._id} value={workspace._id}>
                         {workspace.name}
