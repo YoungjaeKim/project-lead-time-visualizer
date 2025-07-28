@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Project as ProjectType, Event, User } from '../types';
-import { projectApi, eventApi, userApi } from '../services/api';
-import { formatDate } from '../utils/dateUtils';
-import { formatCurrency, calculateProjectCost, calculateBudgetUsage, getBudgetStatus } from '../utils/costUtils';
+import { Project as ProjectType, Event, User, ExternalSourceConfig } from '../types';
+import { projectApi, eventApi, userApi, externalSourceApi } from '@/services/api';
+import { formatDate } from '@/utils/dateUtils';
+import { formatCurrency, calculateProjectCost, calculateBudgetUsage, getBudgetStatus } from '@/utils/costUtils';
 import EventCard from '../components/EventCard';
 import ActivityGrid from '../components/ActivityGrid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,7 @@ const Project: React.FC = () => {
   const [project, setProject] = useState<ProjectType | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [externalSources, setExternalSources] = useState<ExternalSourceConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'all' | 'done' | 'ongoing' | 'notyet'>('all');
@@ -40,6 +41,24 @@ const Project: React.FC = () => {
     actualHours: '',
     participants: [] as string[],
     referenceLinks: [{ title: '', url: '', type: 'other' as 'jira' | 'github' | 'confluence' | 'other' }]
+  });
+
+  // External Source dialog state
+  const [showAddExternalSourceDialog, setShowAddExternalSourceDialog] = useState(false);
+  const [showEditExternalSourceDialog, setShowEditExternalSourceDialog] = useState(false);
+  const [createExternalSourceLoading, setCreateExternalSourceLoading] = useState(false);
+  const [editingExternalSource, setEditingExternalSource] = useState<ExternalSourceConfig | null>(null);
+  const [externalSourceFormData, setExternalSourceFormData] = useState({
+    name: '',
+    type: 'jira' as 'jira' | 'github' | 'confluence',
+    baseUrl: '',
+    credentials: {
+      username: '',
+      token: '',
+      apiKey: ''
+    },
+    syncFrequency: 24,
+    externalId: ''
   });
 
   useEffect(() => {
@@ -62,12 +81,214 @@ const Project: React.FC = () => {
       setProject(projectResponse.data);
       setEvents(eventsResponse.data);
       setAllUsers(usersResponse.data);
+      
+      // Load external sources for this project
+      await loadExternalSources(projectResponse.data._id);
     } catch (err) {
       setError('Failed to load project data');
       console.error('Error loading project data:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadExternalSources = async (projectId: string) => {
+    try {
+      const response = await externalSourceApi.getAll();
+      // Filter external sources that have this project in their mappings
+      const projectExternalSources = response.data.filter(source => 
+        source.projectMappings.some(mapping => mapping.internalProjectId === projectId)
+      );
+      setExternalSources(projectExternalSources);
+    } catch (err) {
+      console.error('Error loading external sources:', err);
+    }
+  };
+
+  const handleCreateExternalSource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!externalSourceFormData.name.trim() || !externalSourceFormData.baseUrl.trim() || 
+        !externalSourceFormData.credentials.token.trim() || !externalSourceFormData.externalId.trim() || !project) return;
+
+    try {
+      setCreateExternalSourceLoading(true);
+      const externalSourceData = {
+        name: externalSourceFormData.name.trim(),
+        type: externalSourceFormData.type,
+        baseUrl: externalSourceFormData.baseUrl.trim(),
+        credentials: {
+          username: externalSourceFormData.credentials.username.trim() || undefined,
+          token: externalSourceFormData.credentials.token.trim(),
+          apiKey: externalSourceFormData.credentials.apiKey.trim() || undefined
+        },
+        syncFrequency: externalSourceFormData.syncFrequency,
+        isActive: true,
+        projectMappings: [{
+          externalId: externalSourceFormData.externalId.trim(),
+          internalProjectId: project._id
+        }]
+      };
+      
+      const response = await externalSourceApi.create(externalSourceData as any);
+      const newExternalSource = response.data;
+      
+      setExternalSources([...externalSources, newExternalSource]);
+      setShowAddExternalSourceDialog(false);
+      resetExternalSourceForm();
+    } catch (err) {
+      console.error('Error creating external source:', err);
+      setError('Failed to create external source');
+    } finally {
+      setCreateExternalSourceLoading(false);
+    }
+  };
+
+  const handleEditExternalSource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingExternalSource || !externalSourceFormData.name.trim() || !externalSourceFormData.baseUrl.trim() || 
+        !externalSourceFormData.credentials.token.trim() || !externalSourceFormData.externalId.trim() || !project) return;
+
+    try {
+      setCreateExternalSourceLoading(true);
+      
+      // Find existing mapping for this project or create new one
+      const existingMappings = editingExternalSource.projectMappings.filter(
+        mapping => mapping.internalProjectId !== project._id
+      );
+      const updatedMappings = [
+        ...existingMappings,
+        {
+          externalId: externalSourceFormData.externalId.trim(),
+          internalProjectId: project._id
+        }
+      ];
+      
+      const updateData = {
+        name: externalSourceFormData.name.trim(),
+        type: externalSourceFormData.type,
+        baseUrl: externalSourceFormData.baseUrl.trim(),
+        credentials: {
+          username: externalSourceFormData.credentials.username.trim() || undefined,
+          token: externalSourceFormData.credentials.token.trim(),
+          apiKey: externalSourceFormData.credentials.apiKey.trim() || undefined
+        },
+        syncFrequency: externalSourceFormData.syncFrequency,
+        projectMappings: updatedMappings
+      };
+      
+      await externalSourceApi.update(editingExternalSource._id, updateData);
+      await loadExternalSources(project._id);
+      setShowEditExternalSourceDialog(false);
+      setEditingExternalSource(null);
+      resetExternalSourceForm();
+    } catch (err) {
+      console.error('Error updating external source:', err);
+      setError('Failed to update external source');
+    } finally {
+      setCreateExternalSourceLoading(false);
+    }
+  };
+
+  const handleDeleteExternalSource = async (externalSourceId: string) => {
+    if (!project) return;
+    
+    try {
+      const source = externalSources.find(s => s._id === externalSourceId);
+      if (!source) return;
+      
+      // If this source only has mapping for current project, delete it entirely
+      if (source.projectMappings.length === 1 && 
+          source.projectMappings[0].internalProjectId === project._id) {
+        await externalSourceApi.delete(externalSourceId);
+      } else {
+        // Remove only the mapping for this project
+        const updatedMappings = source.projectMappings.filter(
+          mapping => mapping.internalProjectId !== project._id
+        );
+        await externalSourceApi.update(externalSourceId, { projectMappings: updatedMappings });
+      }
+      
+      await loadExternalSources(project._id);
+    } catch (err) {
+      console.error('Error deleting external source:', err);
+      setError('Failed to delete external source');
+    }
+  };
+
+  const handleTestConnection = async (externalSourceId: string) => {
+    try {
+      await externalSourceApi.testConnection(externalSourceId);
+      // You might want to show a success message here
+      console.log('Connection test successful');
+    } catch (err) {
+      console.error('Connection test failed:', err);
+      setError('Connection test failed');
+    }
+  };
+
+  const handleTriggerSync = async (externalSourceId: string) => {
+    if (!project) return;
+    
+    try {
+      await externalSourceApi.triggerSync(externalSourceId);
+      await loadExternalSources(project._id);
+      console.log('Sync triggered successfully');
+    } catch (err) {
+      console.error('Sync trigger failed:', err);
+      setError('Failed to trigger sync');
+    }
+  };
+
+  const openEditExternalSourceDialog = (externalSource: ExternalSourceConfig) => {
+    if (!project) return;
+    
+    const projectMapping = externalSource.projectMappings.find(
+      mapping => mapping.internalProjectId === project._id
+    );
+    
+    setEditingExternalSource(externalSource);
+    setExternalSourceFormData({
+      name: externalSource.name,
+      type: externalSource.type,
+      baseUrl: externalSource.baseUrl,
+      credentials: {
+        username: '',
+        token: '',
+        apiKey: ''
+      },
+      syncFrequency: externalSource.syncFrequency,
+      externalId: projectMapping?.externalId || ''
+    });
+    setShowEditExternalSourceDialog(true);
+  };
+
+  const resetExternalSourceForm = () => {
+    setExternalSourceFormData({
+      name: '',
+      type: 'jira',
+      baseUrl: '',
+      credentials: {
+        username: '',
+        token: '',
+        apiKey: ''
+      },
+      syncFrequency: 24,
+      externalId: ''
+    });
+  };
+
+  const getExternalSourceIcon = (type: string) => {
+    switch (type) {
+      case 'jira': return '🎯';
+      case 'github': return '📚';
+      case 'confluence': return '📖';
+      default: return '🔗';
+    }
+  };
+
+  const formatLastSync = (date?: Date) => {
+    if (!date) return 'Never';
+    return new Date(date).toLocaleString();
   };
 
   const handleEventStatusChange = async (eventId: string, status: 'done' | 'ongoing' | 'notyet') => {
@@ -205,10 +426,10 @@ const Project: React.FC = () => {
   const actualCost = calculateProjectCost(project);
   const budgetUsage = project.budget ? calculateBudgetUsage(actualCost, project.budget) : 0;
   const budgetStatus = getBudgetStatus(budgetUsage);
-  
+
   const startDate = new Date(project.startDate);
   const endDate = project.endDate ? new Date(project.endDate) : new Date();
-  
+
   const adjustedStartDate = new Date();
   adjustedStartDate.setDate(adjustedStartDate.getDate() - 48);
 
@@ -650,9 +871,409 @@ const Project: React.FC = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* External Sources */}
+            <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
+              <CardHeader className="bg-blue-800 text-white p-4 border-0">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold">External Sources</CardTitle>
+                  <Dialog open={showAddExternalSourceDialog} onOpenChange={setShowAddExternalSourceDialog}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        onClick={() => setShowAddExternalSourceDialog(true)}
+                        className="bg-white text-blue-800 hover:bg-neutral-50 border-0 rounded font-medium px-2 py-1 h-6 text-xs"
+                      >
+                        + Add
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4">
+                {externalSources.length > 0 ? (
+                  <div className="space-y-3">
+                    {externalSources.map(source => {
+                      const projectMapping = source.projectMappings.find(
+                        mapping => mapping.internalProjectId === project?._id
+                      );
+                      return (
+                        <div key={source._id} className="p-3 bg-neutral-50 rounded border">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-base">{getExternalSourceIcon(source.type)}</span>
+                              <div>
+                                <div className="font-medium text-neutral-900 text-sm">{source.name}</div>
+                                <div className="text-xs text-neutral-500 capitalize">{source.type}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditExternalSourceDialog(source)}
+                                className="h-6 w-6 p-0 hover:bg-blue-100 text-blue-600"
+                                title="Edit"
+                              >
+                                ✏️
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTestConnection(source._id)}
+                                className="h-6 w-6 p-0 hover:bg-green-100 text-green-600"
+                                title="Test Connection"
+                              >
+                                🔧
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTriggerSync(source._id)}
+                                className="h-6 w-6 p-0 hover:bg-orange-100 text-orange-600"
+                                title="Trigger Sync"
+                              >
+                                🔄
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteExternalSource(source._id)}
+                                className="h-6 w-6 p-0 hover:bg-red-100 text-red-600"
+                                title="Remove"
+                              >
+                                🗑️
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="text-xs text-neutral-500 space-y-1">
+                            <div>External ID: <span className="font-mono">{projectMapping?.externalId}</span></div>
+                            <div>Last Sync: {formatLastSync(source.lastSyncAt)}</div>
+                            <div>Sync Every: {source.syncFrequency}h</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="text-neutral-500 text-sm mb-2">No external sources</div>
+                    <p className="text-neutral-400 text-xs">Connect to Jira, GitHub, or Confluence</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+
+      {/* Add External Source Dialog */}
+      <Dialog open={showAddExternalSourceDialog} onOpenChange={setShowAddExternalSourceDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-elevation-64 border border-neutral-200">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-xl font-semibold text-neutral-900">Add External Source</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateExternalSource} className="p-6 pt-4 space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="external-source-name" className="text-sm font-medium text-neutral-900">Name *</Label>
+                <Input
+                  id="external-source-name"
+                  value={externalSourceFormData.name}
+                  onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Main Jira Instance"
+                  required
+                  disabled={createExternalSourceLoading}
+                  className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="external-source-type" className="text-sm font-medium text-neutral-900">Type *</Label>
+                <Select value={externalSourceFormData.type} onValueChange={(value: any) => setExternalSourceFormData(prev => ({ ...prev, type: value }))}>
+                  <SelectTrigger className="h-8 rounded border-neutral-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
+                    <SelectItem value="jira">Jira</SelectItem>
+                    <SelectItem value="github">GitHub</SelectItem>
+                    <SelectItem value="confluence">Confluence</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="external-source-base-url" className="text-sm font-medium text-neutral-900">Base URL *</Label>
+              <Input
+                id="external-source-base-url"
+                value={externalSourceFormData.baseUrl}
+                onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
+                placeholder="e.g., https://yourcompany.atlassian.net or https://api.github.com"
+                required
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="external-source-external-id" className="text-sm font-medium text-neutral-900">External Project ID *</Label>
+              <Input
+                id="external-source-external-id"
+                value={externalSourceFormData.externalId}
+                onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, externalId: e.target.value }))}
+                placeholder="e.g., PROJECT-KEY for Jira, owner/repo for GitHub"
+                required
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="external-source-username" className="text-sm font-medium text-neutral-900">Username/Email</Label>
+                <Input
+                  id="external-source-username"
+                  value={externalSourceFormData.credentials.username}
+                  onChange={(e) => setExternalSourceFormData(prev => ({ 
+                    ...prev, 
+                    credentials: { ...prev.credentials, username: e.target.value }
+                  }))}
+                  placeholder="Your username or email"
+                  disabled={createExternalSourceLoading}
+                  className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="external-source-sync-frequency" className="text-sm font-medium text-neutral-900">Sync Frequency (hours) *</Label>
+                <Input
+                  id="external-source-sync-frequency"
+                  type="number"
+                  min="1"
+                  value={externalSourceFormData.syncFrequency}
+                  onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, syncFrequency: parseInt(e.target.value) || 24 }))}
+                  required
+                  disabled={createExternalSourceLoading}
+                  className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="external-source-token" className="text-sm font-medium text-neutral-900">API Token/Key *</Label>
+              <Input
+                id="external-source-token"
+                type="password"
+                value={externalSourceFormData.credentials.token}
+                onChange={(e) => setExternalSourceFormData(prev => ({ 
+                  ...prev, 
+                  credentials: { ...prev.credentials, token: e.target.value }
+                }))}
+                placeholder="Your API token or personal access token"
+                required
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="external-source-api-key" className="text-sm font-medium text-neutral-900">Additional API Key</Label>
+              <Input
+                id="external-source-api-key"
+                type="password"
+                value={externalSourceFormData.credentials.apiKey}
+                onChange={(e) => setExternalSourceFormData(prev => ({ 
+                  ...prev, 
+                  credentials: { ...prev.credentials, apiKey: e.target.value }
+                }))}
+                placeholder="Optional additional API key"
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAddExternalSourceDialog(false);
+                  resetExternalSourceForm();
+                }}
+                disabled={createExternalSourceLoading}
+                className="rounded px-4 py-1.5 h-8 text-sm border-neutral-300 hover:bg-neutral-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createExternalSourceLoading || !externalSourceFormData.name.trim() || 
+                         !externalSourceFormData.baseUrl.trim() || !externalSourceFormData.credentials.token.trim() ||
+                         !externalSourceFormData.externalId.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+              >
+                {createExternalSourceLoading ? 'Creating...' : 'Add External Source'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit External Source Dialog */}
+      <Dialog open={showEditExternalSourceDialog} onOpenChange={setShowEditExternalSourceDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-elevation-64 border border-neutral-200">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-xl font-semibold text-neutral-900">Edit External Source</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleEditExternalSource} className="p-6 pt-4 space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-external-source-name" className="text-sm font-medium text-neutral-900">Name *</Label>
+                <Input
+                  id="edit-external-source-name"
+                  value={externalSourceFormData.name}
+                  onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Main Jira Instance"
+                  required
+                  disabled={createExternalSourceLoading}
+                  className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-external-source-type" className="text-sm font-medium text-neutral-900">Type *</Label>
+                <Select value={externalSourceFormData.type} onValueChange={(value: any) => setExternalSourceFormData(prev => ({ ...prev, type: value }))}>
+                  <SelectTrigger className="h-8 rounded border-neutral-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
+                    <SelectItem value="jira">Jira</SelectItem>
+                    <SelectItem value="github">GitHub</SelectItem>
+                    <SelectItem value="confluence">Confluence</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-external-source-base-url" className="text-sm font-medium text-neutral-900">Base URL *</Label>
+              <Input
+                id="edit-external-source-base-url"
+                value={externalSourceFormData.baseUrl}
+                onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
+                placeholder="e.g., https://yourcompany.atlassian.net or https://api.github.com"
+                required
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-external-source-external-id" className="text-sm font-medium text-neutral-900">External Project ID *</Label>
+              <Input
+                id="edit-external-source-external-id"
+                value={externalSourceFormData.externalId}
+                onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, externalId: e.target.value }))}
+                placeholder="e.g., PROJECT-KEY for Jira, owner/repo for GitHub"
+                required
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-external-source-username" className="text-sm font-medium text-neutral-900">Username/Email</Label>
+                <Input
+                  id="edit-external-source-username"
+                  value={externalSourceFormData.credentials.username}
+                  onChange={(e) => setExternalSourceFormData(prev => ({ 
+                    ...prev, 
+                    credentials: { ...prev.credentials, username: e.target.value }
+                  }))}
+                  placeholder="Your username or email"
+                  disabled={createExternalSourceLoading}
+                  className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-external-source-sync-frequency" className="text-sm font-medium text-neutral-900">Sync Frequency (hours) *</Label>
+                <Input
+                  id="edit-external-source-sync-frequency"
+                  type="number"
+                  min="1"
+                  value={externalSourceFormData.syncFrequency}
+                  onChange={(e) => setExternalSourceFormData(prev => ({ ...prev, syncFrequency: parseInt(e.target.value) || 24 }))}
+                  required
+                  disabled={createExternalSourceLoading}
+                  className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-external-source-token" className="text-sm font-medium text-neutral-900">API Token/Key *</Label>
+              <Input
+                id="edit-external-source-token"
+                type="password"
+                value={externalSourceFormData.credentials.token}
+                onChange={(e) => setExternalSourceFormData(prev => ({ 
+                  ...prev, 
+                  credentials: { ...prev.credentials, token: e.target.value }
+                }))}
+                placeholder="Your API token or personal access token"
+                required
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-external-source-api-key" className="text-sm font-medium text-neutral-900">Additional API Key</Label>
+              <Input
+                id="edit-external-source-api-key"
+                type="password"
+                value={externalSourceFormData.credentials.apiKey}
+                onChange={(e) => setExternalSourceFormData(prev => ({ 
+                  ...prev, 
+                  credentials: { ...prev.credentials, apiKey: e.target.value }
+                }))}
+                placeholder="Optional additional API key"
+                disabled={createExternalSourceLoading}
+                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowEditExternalSourceDialog(false);
+                  setEditingExternalSource(null);
+                  resetExternalSourceForm();
+                }}
+                disabled={createExternalSourceLoading}
+                className="rounded px-4 py-1.5 h-8 text-sm border-neutral-300 hover:bg-neutral-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createExternalSourceLoading || !externalSourceFormData.name.trim() || 
+                         !externalSourceFormData.baseUrl.trim() || !externalSourceFormData.credentials.token.trim() ||
+                         !externalSourceFormData.externalId.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+              >
+                {createExternalSourceLoading ? 'Updating...' : 'Update External Source'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
