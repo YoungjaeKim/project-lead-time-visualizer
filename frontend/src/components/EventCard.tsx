@@ -19,7 +19,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
     switch (status) {
       case 'done': return 'default';
       case 'ongoing': return 'secondary';
-      case 'notyet': return 'outline';
+      case 'notyet': return 'secondary';
       default: return 'outline';
     }
   };
@@ -71,14 +71,14 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
               value={event.status} 
               onValueChange={(value) => onStatusChange(event._id, value as 'done' | 'ongoing' | 'notyet')}
             >
-              <SelectTrigger className="w-24 h-8">
+              <SelectTrigger className="w-32 h-8">
                 <SelectValue>
                   <Badge variant={getStatusVariant(event.status)} className="text-xs">
                     {getStatusLabel(event.status)}
                   </Badge>
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
                 <SelectItem value="notyet">Not Yet</SelectItem>
                 <SelectItem value="ongoing">Ongoing</SelectItem>
                 <SelectItem value="done">Done</SelectItem>
