@@ -564,7 +564,7 @@ const Project: React.FC = () => {
                             />
                           </div>
 
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                          <div className="space-y-4">
                             <div className="space-y-2">
                               <Label htmlFor="event-status" className="text-sm font-medium text-neutral-900">Status *</Label>
                               <Select value={eventFormData.status} onValueChange={(value: any) => setEventFormData(prev => ({ ...prev, status: value }))}>
@@ -579,29 +579,114 @@ const Project: React.FC = () => {
                               </Select>
                             </div>
                             
+                            {/* Start Date and Time */}
                             <div className="space-y-2">
-                              <Label htmlFor="event-start-date" className="text-sm font-medium text-neutral-900">Start Date *</Label>
-                              <Input
-                                id="event-start-date"
-                                type="datetime-local"
-                                value={eventFormData.startDate}
-                                onChange={(e) => setEventFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                                required
-                                disabled={createEventLoading}
-                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                              />
+                              <Label className="text-sm font-medium text-neutral-900">Start Date & Time *</Label>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label htmlFor="event-start-date" className="text-xs text-neutral-600">Date</Label>
+                                  <Input
+                                    id="event-start-date"
+                                    type="date"
+                                    value={eventFormData.startDate ? eventFormData.startDate.split('T')[0] : ''}
+                                    onChange={(e) => {
+                                      const time = eventFormData.startDate ? eventFormData.startDate.split('T')[1] || '09:00' : '09:00';
+                                      setEventFormData(prev => ({ 
+                                        ...prev, 
+                                        startDate: e.target.value ? `${e.target.value}T${time}` : ''
+                                      }));
+                                    }}
+                                    required
+                                    disabled={createEventLoading}
+                                    className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label htmlFor="event-start-time" className="text-xs text-neutral-600">Time</Label>
+                                  <Input
+                                    id="event-start-time"
+                                    type="time"
+                                    value={eventFormData.startDate ? eventFormData.startDate.split('T')[1] || '09:00' : '09:00'}
+                                    onChange={(e) => {
+                                      const date = eventFormData.startDate ? eventFormData.startDate.split('T')[0] : new Date().toISOString().split('T')[0];
+                                      setEventFormData(prev => ({ 
+                                        ...prev, 
+                                        startDate: `${date}T${e.target.value}`
+                                      }));
+                                    }}
+                                    disabled={createEventLoading}
+                                    className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                                  />
+                                </div>
+                              </div>
                             </div>
                             
+                            {/* End Date and Time */}
                             <div className="space-y-2">
-                              <Label htmlFor="event-end-date" className="text-sm font-medium text-neutral-900">End Date</Label>
-                              <Input
-                                id="event-end-date"
-                                type="datetime-local"
-                                value={eventFormData.endDate}
-                                onChange={(e) => setEventFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                                disabled={createEventLoading}
-                                className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                              />
+                              <Label className="text-sm font-medium text-neutral-900">End Date & Time (Optional)</Label>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label htmlFor="event-end-date" className="text-xs text-neutral-600">Date</Label>
+                                  <Input
+                                    id="event-end-date"
+                                    type="date"
+                                    value={eventFormData.endDate ? eventFormData.endDate.split('T')[0] : ''}
+                                    onChange={(e) => {
+                                      if (!e.target.value) {
+                                        setEventFormData(prev => ({ ...prev, endDate: '' }));
+                                        return;
+                                      }
+                                      const time = eventFormData.endDate ? eventFormData.endDate.split('T')[1] || '17:00' : '17:00';
+                                      setEventFormData(prev => ({ 
+                                        ...prev, 
+                                        endDate: `${e.target.value}T${time}`
+                                      }));
+                                    }}
+                                    disabled={createEventLoading}
+                                    className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label htmlFor="event-end-time" className="text-xs text-neutral-600">Time</Label>
+                                  <Input
+                                    id="event-end-time"
+                                    type="time"
+                                    value={eventFormData.endDate ? eventFormData.endDate.split('T')[1] || '17:00' : '17:00'}
+                                    onChange={(e) => {
+                                      const date = eventFormData.endDate ? 
+                                        eventFormData.endDate.split('T')[0] : 
+                                        (eventFormData.startDate ? eventFormData.startDate.split('T')[0] : new Date().toISOString().split('T')[0]);
+                                      setEventFormData(prev => ({ 
+                                        ...prev, 
+                                        endDate: `${date}T${e.target.value}`
+                                      }));
+                                    }}
+                                    disabled={createEventLoading || !eventFormData.endDate}
+                                    className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm disabled:bg-neutral-50 disabled:text-neutral-400"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <input
+                                  type="checkbox"
+                                  id="clear-end-date"
+                                  checked={!eventFormData.endDate}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setEventFormData(prev => ({ ...prev, endDate: '' }));
+                                    } else {
+                                      const startDate = eventFormData.startDate ? eventFormData.startDate.split('T')[0] : new Date().toISOString().split('T')[0];
+                                      setEventFormData(prev => ({ ...prev, endDate: `${startDate}T17:00` }));
+                                    }
+                                  }}
+                                  className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
+                                  disabled={createEventLoading}
+                                  title="Toggle one-time event (no end date)"
+                                />
+                                <Label htmlFor="clear-end-date" className="text-xs text-neutral-600 cursor-pointer">
+                                  One-time event (no end date)
+                                </Label>
+                              </div>
                             </div>
                           </div>
 
