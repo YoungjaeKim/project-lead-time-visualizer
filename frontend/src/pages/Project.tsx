@@ -27,6 +27,19 @@ const Project: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'all' | 'done' | 'ongoing' | 'notyet'>('all');
 
+  // Edit Project dialog state
+  const [showEditProjectDialog, setShowEditProjectDialog] = useState(false);
+  const [editProjectLoading, setEditProjectLoading] = useState(false);
+  const [projectFormData, setProjectFormData] = useState({
+    name: '',
+    description: '',
+    status: 'planning' as 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled',
+    startDate: '',
+    endDate: '',
+    budget: '',
+    estimatedCost: ''
+  });
+
   // Add Event dialog state
   const [showAddEventDialog, setShowAddEventDialog] = useState(false);
   const [createEventLoading, setCreateEventLoading] = useState(false);
@@ -90,6 +103,62 @@ const Project: React.FC = () => {
       console.error('Error loading project data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openEditProjectDialog = () => {
+    if (!project) return;
+    const startDateStr = project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '';
+    const endDateStr = project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '';
+    setProjectFormData({
+      name: project.name,
+      description: project.description || '',
+      status: project.status,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      budget: project.budget != null ? String(project.budget) : '',
+      estimatedCost: project.estimatedCost != null ? String(project.estimatedCost) : ''
+    });
+    setShowEditProjectDialog(true);
+  };
+
+  const resetProjectForm = () => {
+    setProjectFormData({
+      name: '',
+      description: '',
+      status: 'planning',
+      startDate: '',
+      endDate: '',
+      budget: '',
+      estimatedCost: ''
+    });
+  };
+
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectFormData.name.trim() || !projectFormData.startDate || !project) return;
+
+    try {
+      setEditProjectLoading(true);
+      const updateData = {
+        name: projectFormData.name.trim(),
+        description: projectFormData.description.trim() || undefined,
+        status: projectFormData.status,
+        startDate: new Date(projectFormData.startDate),
+        endDate: projectFormData.endDate ? new Date(projectFormData.endDate) : undefined,
+        budget: projectFormData.budget !== '' ? parseFloat(projectFormData.budget) : undefined,
+        estimatedCost: projectFormData.estimatedCost !== '' ? parseFloat(projectFormData.estimatedCost) : undefined,
+      } as any;
+
+      const response = await projectApi.update(project._id, updateData);
+      setProject(response.data);
+      setShowEditProjectDialog(false);
+      resetProjectForm();
+    } catch (err) {
+      console.error('Error updating project:', err);
+      setError('Failed to update project');
+    } finally {
+      setEditProjectLoading(false);
     }
   };
 
@@ -459,10 +528,166 @@ const Project: React.FC = () => {
             >
               ← Back to Dashboard
             </Button>
-            
-            <Badge variant={getStatusVariant(project.status)} className="capitalize px-2 py-1 text-xs font-medium rounded">
-              {project.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Dialog open={showEditProjectDialog} onOpenChange={setShowEditProjectDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openEditProjectDialog}
+                    className="bg-neutral-100 text-neutral-900 hover:bg-neutral-200 border-0 rounded font-medium px-3 py-1.5 h-8 text-sm"
+                  >
+                    Edit
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-elevation-64 border border-neutral-200">
+                  <DialogHeader className="p-6 pb-0">
+                    <DialogTitle className="text-xl font-semibold text-neutral-900">Edit Project</DialogTitle>
+                  </DialogHeader>
+
+                  <form onSubmit={handleUpdateProject} className="p-6 pt-4 space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="project-name" className="text-sm font-medium text-neutral-900">Name *</Label>
+                        <Input
+                          id="project-name"
+                          value={projectFormData.name}
+                          onChange={(e) => setProjectFormData(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Project name"
+                          required
+                          disabled={editProjectLoading}
+                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="project-status" className="text-sm font-medium text-neutral-900">Status *</Label>
+                        <Select value={projectFormData.status} onValueChange={(value: any) => setProjectFormData(prev => ({ ...prev, status: value }))}>
+                          <SelectTrigger className="h-8 rounded border-neutral-300">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
+                            <SelectItem value="planning">Planning</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="on-hold">On hold</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="project-description" className="text-sm font-medium text-neutral-900">Description</Label>
+                      <textarea
+                        id="project-description"
+                        value={projectFormData.description}
+                        onChange={(e) => setProjectFormData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Describe the project"
+                        rows={3}
+                        className="w-full border border-neutral-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 resize-none text-sm"
+                        disabled={editProjectLoading}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="project-start-date" className="text-sm font-medium text-neutral-900">Start Date *</Label>
+                        <Input
+                          id="project-start-date"
+                          type="date"
+                          value={projectFormData.startDate}
+                          onChange={(e) => setProjectFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                          required
+                          disabled={editProjectLoading}
+                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="project-end-date" className="text-sm font-medium text-neutral-900">End Date (Optional)</Label>
+                        <Input
+                          id="project-end-date"
+                          type="date"
+                          value={projectFormData.endDate}
+                          onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                          disabled={editProjectLoading}
+                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="clear-project-end-date"
+                            checked={!projectFormData.endDate}
+                            onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.checked ? '' : prev.startDate }))}
+                            className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
+                            disabled={editProjectLoading}
+                          />
+                          <Label htmlFor="clear-project-end-date" className="text-xs text-neutral-600 cursor-pointer">
+                            No end date yet
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="project-budget" className="text-sm font-medium text-neutral-900">Budget</Label>
+                        <Input
+                          id="project-budget"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={projectFormData.budget}
+                          onChange={(e) => setProjectFormData(prev => ({ ...prev, budget: e.target.value }))}
+                          placeholder="Enter budget"
+                          disabled={editProjectLoading}
+                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="project-estimated-cost" className="text-sm font-medium text-neutral-900">Estimated Cost</Label>
+                        <Input
+                          id="project-estimated-cost"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={projectFormData.estimatedCost}
+                          onChange={(e) => setProjectFormData(prev => ({ ...prev, estimatedCost: e.target.value }))}
+                          placeholder="Enter estimated cost"
+                          disabled={editProjectLoading}
+                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowEditProjectDialog(false);
+                          resetProjectForm();
+                        }}
+                        disabled={editProjectLoading}
+                        className="rounded px-4 py-1.5 h-8 text-sm border-neutral-300 hover:bg-neutral-50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={editProjectLoading || !projectFormData.name.trim() || !projectFormData.startDate}
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+                      >
+                        {editProjectLoading ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <Badge variant={getStatusVariant(project.status)} className="capitalize px-2 py-1 text-xs font-medium rounded">
+                {project.status}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
