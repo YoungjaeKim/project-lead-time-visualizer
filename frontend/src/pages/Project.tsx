@@ -713,9 +713,9 @@ const Project: React.FC = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <ActivityGrid 
-                  events={events} 
-                  startDate={adjustedStartDate}
-                  endDate={new Date()}
+                  events={events}
+                  startDate={startDate}
+                  endDate={project.endDate ? endDate : undefined}
                 />
               </CardContent>
             </Card>
