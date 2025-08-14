@@ -89,10 +89,20 @@ const ActivityGrid: React.FC<ActivityGridProps> = ({ events, startDate, endDate 
 
   const isInProjectPeriod = (date: Date) => date >= projectStart && date <= projectEnd;
 
+  const normalizeDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
   const getEventsForDate = (date: Date) =>
     events.filter((event) => {
-      const eventDate = new Date(event.startDate);
-      return eventDate.toDateString() === date.toDateString();
+      const start = normalizeDay(new Date(event.startDate));
+      // One-time events count only on the start date
+      if (event.type === 'one-time' || !event.endDate) {
+        return isSameDay(start, date);
+      }
+      // Duration events count for every day between start and end inclusive
+      const end = normalizeDay(new Date(event.endDate));
+      return date >= start && date <= end;
     });
 
   const getActivityLevelForDate = (date: Date) => {
@@ -152,6 +162,9 @@ const ActivityGrid: React.FC<ActivityGridProps> = ({ events, startDate, endDate 
           value={toInputValue(fromDate)}
           onChange={(e) => onFromChange(e.target.value)}
           className="h-7 rounded border border-neutral-300 px-2"
+          title="From date"
+          aria-label="From date"
+          placeholder="YYYY-MM-DD"
         />
         <span>To</span>
         <input
@@ -159,6 +172,9 @@ const ActivityGrid: React.FC<ActivityGridProps> = ({ events, startDate, endDate 
           value={toInputValue(toDate)}
           onChange={(e) => onToChange(e.target.value)}
           className="h-7 rounded border border-neutral-300 px-2"
+          title="To date"
+          aria-label="To date"
+          placeholder="YYYY-MM-DD"
         />
       </div>
 

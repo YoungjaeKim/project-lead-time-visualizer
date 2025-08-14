@@ -137,7 +137,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
 
   const getTypeVariant = (type: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (type) {
-      case 'duration': return 'secondary';
+      case 'duration': return 'outline';
       case 'one-time': return 'outline';
       default: return 'outline';
     }
@@ -167,16 +167,18 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold leading-none tracking-tight mb-2">{event.title}</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-semibold leading-none tracking-tight">{event.title}</h3>
+              <Badge variant={getTypeVariant(event.type)} className="capitalize">
+                {event.type}
+              </Badge>
+            </div>
             {event.description && (
               <p className="text-sm text-muted-foreground">{event.description}</p>
             )}
           </div>
           
           <div className="flex flex-col gap-2 ml-4">
-            <Badge variant={getTypeVariant(event.type)} className="capitalize">
-              {event.type}
-            </Badge>
             
             <Select 
               value={event.status} 
@@ -228,7 +230,13 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
                     
                     <div className="space-y-2">
                       <Label htmlFor="edit-event-type" className="text-sm font-medium text-neutral-900">Type *</Label>
-                      <Select value={eventFormData.type} onValueChange={(value: any) => setEventFormData(prev => ({ ...prev, type: value }))}>
+                      <Select value={eventFormData.type} onValueChange={(value: any) => {
+                        setEventFormData(prev => ({
+                          ...prev,
+                          type: value,
+                          endDate: value === 'one-time' ? '' : (prev.endDate || (prev.startDate ? `${prev.startDate.split('T')[0]}T17:00` : ''))
+                        }));
+                      }}>
                         <SelectTrigger className="h-8 rounded border-neutral-300">
                           <SelectValue />
                         </SelectTrigger>
@@ -330,7 +338,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
                                 endDate: `${e.target.value}T${time}`
                               }));
                             }}
-                            disabled={editLoading}
+                            disabled={editLoading || eventFormData.type === 'one-time'}
                             className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
                           />
                         </div>
@@ -349,32 +357,12 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
                                 endDate: `${date}T${e.target.value}`
                               }));
                             }}
-                            disabled={editLoading || !eventFormData.endDate}
+                            disabled={editLoading || eventFormData.type === 'one-time' || !eventFormData.endDate}
                             className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                           />
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <input
-                          type="checkbox"
-                          id="edit-clear-end-date"
-                          checked={!eventFormData.endDate}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEventFormData(prev => ({ ...prev, endDate: '' }));
-                            } else {
-                              const startDate = eventFormData.startDate ? eventFormData.startDate.split('T')[0] : new Date().toISOString().split('T')[0];
-                              setEventFormData(prev => ({ ...prev, endDate: `${startDate}T17:00` }));
-                            }
-                          }}
-                          className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
-                          disabled={editLoading}
-                          title="Toggle one-time event (no end date)"
-                        />
-                        <Label htmlFor="edit-clear-end-date" className="text-xs text-neutral-600 cursor-pointer">
-                          One-time event (no end date)
-                        </Label>
-                      </div>
+                      
                     </div>
                   </div>
 
