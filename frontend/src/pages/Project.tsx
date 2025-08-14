@@ -375,6 +375,10 @@ const Project: React.FC = () => {
     }
   };
 
+  const handleEventUpdated = (updatedEvent: Event) => {
+    setEvents(prev => prev.map(e => (e._id === updatedEvent._id ? updatedEvent : e)));
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventFormData.title.trim() || !eventFormData.startDate || !project) return;
@@ -620,6 +624,7 @@ const Project: React.FC = () => {
                             onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.checked ? '' : prev.startDate }))}
                             className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
                             disabled={editProjectLoading}
+                            title="No end date yet"
                           />
                           <Label htmlFor="clear-project-end-date" className="text-xs text-neutral-600 cursor-pointer">
                             No end date yet
@@ -1077,6 +1082,7 @@ const Project: React.FC = () => {
                         event={event}
                         participants={allUsers}
                         onStatusChange={handleEventStatusChange}
+                        onEventUpdated={handleEventUpdated}
                       />
                     ))
                   ) : (
