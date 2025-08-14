@@ -379,6 +379,10 @@ const Project: React.FC = () => {
     setEvents(prev => prev.map(e => (e._id === updatedEvent._id ? updatedEvent : e)));
   };
 
+  const handleEventDeleted = (eventId: string) => {
+    setEvents(prev => prev.filter(e => e._id !== eventId));
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventFormData.title.trim() || !eventFormData.startDate || !project) return;
@@ -1083,6 +1087,7 @@ const Project: React.FC = () => {
                         participants={allUsers}
                         onStatusChange={handleEventStatusChange}
                         onEventUpdated={handleEventUpdated}
+                        onEventDeleted={handleEventDeleted}
                       />
                     ))
                   ) : (

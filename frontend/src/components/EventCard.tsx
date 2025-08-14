@@ -16,12 +16,15 @@ interface EventCardProps {
   participants: User[];
   onStatusChange: (eventId: string, status: 'done' | 'ongoing' | 'notyet') => void;
   onEventUpdated?: (updatedEvent: Event) => void;
+  onEventDeleted?: (eventId: string) => void;
 }
 
-const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChange, onEventUpdated }) => {
+const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChange, onEventUpdated, onEventDeleted }) => {
   const eventCost = calculateEventCost(event, participants);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [eventFormData, setEventFormData] = useState({
     title: '',
     description: '',
@@ -132,6 +135,21 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
       case 'ongoing': return 'secondary';
       case 'notyet': return 'secondary';
       default: return 'outline';
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    try {
+      setDeleteLoading(true);
+      await eventApi.delete(event._id);
+      if (onEventDeleted) {
+        onEventDeleted(event._id);
+      }
+      setShowDeleteDialog(false);
+    } catch (err) {
+      console.error('Error deleting event:', err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -509,6 +527,45 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
                     </Button>
                   </div>
                 </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => setShowDeleteDialog(true)}
+                  variant="outline"
+                  className="h-8 px-3 text-sm rounded border-neutral-300 hover:bg-neutral-50 text-red-600 hover:text-red-700"
+                >
+                  🗑️ Delete
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-white rounded-lg shadow-elevation-64 border border-neutral-200">
+                <DialogHeader className="p-6 pb-2">
+                  <DialogTitle className="text-lg font-semibold text-neutral-900">Delete Event</DialogTitle>
+                </DialogHeader>
+                <div className="px-6 pb-4 text-sm text-neutral-700">
+                  Are you sure you want to delete "{event.title}"? This action cannot be undone.
+                </div>
+                <div className="flex justify-end gap-3 px-6 pb-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowDeleteDialog(false)}
+                    disabled={deleteLoading}
+                    className="rounded px-4 py-1.5 h-8 text-sm border-neutral-300 hover:bg-neutral-50"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleDeleteEvent}
+                    disabled={deleteLoading}
+                    className="bg-red-600 hover:bg-red-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
+                  >
+                    {deleteLoading ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
