@@ -7,7 +7,11 @@ export const calculateProjectCost = (project: Project): number => {
   
   project.events.forEach(event => {
     if (event.actualHours && event.participants) {
-      event.participants.forEach(participantId => {
+      const participantIds = (event.participants as unknown as Array<string | { _id: string }>)
+        .map(p => (typeof p === 'string' ? p : p?._id))
+        .filter(Boolean) as string[];
+
+      participantIds.forEach(participantId => {
         const participant = project.participants.find(p => p._id === participantId);
         if (participant) {
           const dailyHours = 8;
@@ -26,7 +30,11 @@ export const calculateEventCost = (event: Event, participants: User[]): number =
   
   let totalCost = 0;
   
-  event.participants.forEach(participantId => {
+  const participantIds = (event.participants as unknown as Array<string | { _id: string }>)
+    .map(p => (typeof p === 'string' ? p : p?._id))
+    .filter(Boolean) as string[];
+
+  participantIds.forEach(participantId => {
     const participant = participants.find(p => p._id === participantId);
     if (participant) {
       const dailyHours = 8;

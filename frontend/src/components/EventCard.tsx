@@ -605,8 +605,9 @@ const EventCard: React.FC<EventCardProps> = ({ event, participants, onStatusChan
           <div className="space-y-2">
             <span className="text-muted-foreground text-sm">Participants</span>
             <div className="flex flex-wrap gap-2">
-              {event.participants.map(participantId => {
-                const participant = participants.find(p => p._id === participantId);
+              {(event.participants as any[]).map(p => {
+                const participantId = typeof p === 'string' ? p : p?._id;
+                const participant = participants.find(u => u._id === participantId);
                 return participant ? (
                   <Badge 
                     key={participantId}
