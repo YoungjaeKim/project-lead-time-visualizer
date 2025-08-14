@@ -48,7 +48,12 @@ const ProjectRow: React.FC<ProjectRowProps> = ({ project, onClick }) => {
       onClick={() => onClick(project)}
     >
       <CardHeader className="pb-3">
-        <div className="mb-3">
+        <div 
+          className="mb-3"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <ActivityGrid 
             events={project.events || []} 
             startDate={adjustedStartDate}
