@@ -3,3 +3,6 @@ export { CreateOrganizationDialog, type OrganizationFormData } from './CreateOrg
 export { CreateUserDialog, type UserFormData } from './CreateUserDialog';
 export { CreateProjectDialog, type ProjectFormData } from './CreateProjectDialog';
 export { EditProjectDialog, type EditProjectFormData } from './EditProjectDialog';
+export { AddEventDialog, type EventFormData } from './AddEventDialog';
+export { AddExternalSourceDialog, type ExternalSourceFormData } from './AddExternalSourceDialog';
+export { EditExternalSourceDialog, type EditExternalSourceFormData } from './EditExternalSourceDialog';
