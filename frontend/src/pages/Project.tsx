@@ -6,6 +6,7 @@ import { formatDate } from '@/utils/dateUtils';
 import { formatCurrency, calculateProjectCost, calculateBudgetUsage, getBudgetStatus } from '@/utils/costUtils';
 import EventCard from '../components/EventCard';
 import ActivityGrid from '../components/ActivityGrid';
+import { EditProjectDialog, type EditProjectFormData } from '../components/dialogs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { STYLE_CONSTANTS } from '@/styles/constants';
+import { useDialog, useFormLoading } from '@/hooks/useDialog';
 
 const Project: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,18 +30,9 @@ const Project: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'all' | 'done' | 'ongoing' | 'notyet'>('all');
 
-  // Edit Project dialog state
-  const [showEditProjectDialog, setShowEditProjectDialog] = useState(false);
-  const [editProjectLoading, setEditProjectLoading] = useState(false);
-  const [projectFormData, setProjectFormData] = useState({
-    name: '',
-    description: '',
-    status: 'planning' as 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled',
-    startDate: '',
-    endDate: '',
-    budget: '',
-    estimatedCost: ''
-  });
+  // Dialog states
+  const editProjectDialog = useDialog();
+  const editProjectLoading = useFormLoading();
 
   // Add Event dialog state
   const [showAddEventDialog, setShowAddEventDialog] = useState(false);
@@ -107,58 +101,32 @@ const Project: React.FC = () => {
   };
 
   const openEditProjectDialog = () => {
+    editProjectDialog.open();
+  };
+
+  const handleUpdateProject = async (data: EditProjectFormData) => {
     if (!project) return;
-    const startDateStr = project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '';
-    const endDateStr = project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '';
-    setProjectFormData({
-      name: project.name,
-      description: project.description || '',
-      status: project.status,
-      startDate: startDateStr,
-      endDate: endDateStr,
-      budget: project.budget != null ? String(project.budget) : '',
-      estimatedCost: project.estimatedCost != null ? String(project.estimatedCost) : ''
-    });
-    setShowEditProjectDialog(true);
-  };
-
-  const resetProjectForm = () => {
-    setProjectFormData({
-      name: '',
-      description: '',
-      status: 'planning',
-      startDate: '',
-      endDate: '',
-      budget: '',
-      estimatedCost: ''
-    });
-  };
-
-  const handleUpdateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!projectFormData.name.trim() || !projectFormData.startDate || !project) return;
 
     try {
-      setEditProjectLoading(true);
+      editProjectLoading.startLoading();
       const updateData = {
-        name: projectFormData.name.trim(),
-        description: projectFormData.description.trim() || undefined,
-        status: projectFormData.status,
-        startDate: new Date(projectFormData.startDate),
-        endDate: projectFormData.endDate ? new Date(projectFormData.endDate) : undefined,
-        budget: projectFormData.budget !== '' ? parseFloat(projectFormData.budget) : undefined,
-        estimatedCost: projectFormData.estimatedCost !== '' ? parseFloat(projectFormData.estimatedCost) : undefined,
+        name: data.name.trim(),
+        description: data.description.trim() || undefined,
+        status: data.status,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        budget: data.budget !== '' ? parseFloat(data.budget) : undefined,
+        estimatedCost: data.estimatedCost !== '' ? parseFloat(data.estimatedCost) : undefined,
       } as any;
 
       const response = await projectApi.update(project._id, updateData);
       setProject(response.data);
-      setShowEditProjectDialog(false);
-      resetProjectForm();
     } catch (err) {
       console.error('Error updating project:', err);
       setError('Failed to update project');
+      throw err;
     } finally {
-      setEditProjectLoading(false);
+      editProjectLoading.stopLoading();
     }
   };
 
@@ -475,10 +443,10 @@ const Project: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded shadow-elevation-16 border border-neutral-200">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-neutral-600 text-sm font-medium">Loading project...</p>
+      <div className={STYLE_CONSTANTS.loading.container}>
+        <div className={STYLE_CONSTANTS.loading.card}>
+          <div className={STYLE_CONSTANTS.loading.spinner}></div>
+          <p className={STYLE_CONSTANTS.loading.text}>Loading project...</p>
         </div>
       </div>
     );
@@ -486,16 +454,16 @@ const Project: React.FC = () => {
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-        <div className="text-center space-y-4 bg-white p-8 rounded shadow-elevation-16 border border-neutral-200 max-w-md w-full">
-          <Alert variant="destructive" className="border-red-200 bg-red-50">
-            <AlertDescription className="text-red-800 text-sm">
+      <div className={STYLE_CONSTANTS.error.container}>
+        <div className={STYLE_CONSTANTS.error.card}>
+          <Alert variant="destructive" className={STYLE_CONSTANTS.error.alert}>
+            <AlertDescription className={STYLE_CONSTANTS.error.text}>
               {error || 'Project not found'}
             </AlertDescription>
           </Alert>
           <Button 
             onClick={() => navigate('/')}
-            className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-2 h-8 text-sm"
+            className={`${STYLE_CONSTANTS.button.primary} ${STYLE_CONSTANTS.button.sizes.sm}`}
           >
             Back to Home
           </Button>
@@ -524,174 +492,28 @@ const Project: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Fluent 2 Header - Clean and minimal */}
-      <div className="bg-white shadow-elevation-4 border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-14">
+    <div className={STYLE_CONSTANTS.layout.pageContainer}>
+      {/* Header */}
+      <div className={STYLE_CONSTANTS.layout.headerContainer}>
+        <div className={STYLE_CONSTANTS.layout.headerContent}>
+          <div className={`${STYLE_CONSTANTS.layout.headerFlex} ${STYLE_CONSTANTS.layout.headerHeight}`}>
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100 rounded px-3 py-1.5 h-8 text-sm font-medium"
+              className={`${STYLE_CONSTANTS.button.ghost} ${STYLE_CONSTANTS.button.sizes.sm}`}
             >
               ← Back to Dashboard
             </Button>
             <div className="flex items-center gap-2">
-              <Dialog open={showEditProjectDialog} onOpenChange={setShowEditProjectDialog}>
+              <Dialog open={editProjectDialog.isOpen} onOpenChange={editProjectDialog.onOpenChange}>
                 <DialogTrigger asChild>
                   <Button
                     onClick={openEditProjectDialog}
-                    className="bg-neutral-100 text-neutral-900 hover:bg-neutral-200 border-0 rounded font-medium px-3 py-1.5 h-8 text-sm"
+                    className={`${STYLE_CONSTANTS.button.neutral} ${STYLE_CONSTANTS.button.sizes.sm}`}
                   >
                     Edit
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-elevation-64 border border-neutral-200">
-                  <DialogHeader className="p-6 pb-0">
-                    <DialogTitle className="text-xl font-semibold text-neutral-900">Edit Project</DialogTitle>
-                  </DialogHeader>
-
-                  <form onSubmit={handleUpdateProject} className="p-6 pt-4 space-y-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="project-name" className="text-sm font-medium text-neutral-900">Name *</Label>
-                        <Input
-                          id="project-name"
-                          value={projectFormData.name}
-                          onChange={(e) => setProjectFormData(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Project name"
-                          required
-                          disabled={editProjectLoading}
-                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="project-status" className="text-sm font-medium text-neutral-900">Status *</Label>
-                        <Select value={projectFormData.status} onValueChange={(value: any) => setProjectFormData(prev => ({ ...prev, status: value }))}>
-                          <SelectTrigger className="h-8 rounded border-neutral-300">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border border-neutral-200 rounded shadow-elevation-16">
-                            <SelectItem value="planning">Planning</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="on-hold">On hold</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="project-description" className="text-sm font-medium text-neutral-900">Description</Label>
-                      <textarea
-                        id="project-description"
-                        value={projectFormData.description}
-                        onChange={(e) => setProjectFormData(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Describe the project"
-                        rows={3}
-                        className="w-full border border-neutral-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 resize-none text-sm"
-                        disabled={editProjectLoading}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="project-start-date" className="text-sm font-medium text-neutral-900">Start Date *</Label>
-                        <Input
-                          id="project-start-date"
-                          type="date"
-                          value={projectFormData.startDate}
-                          onChange={(e) => setProjectFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                          required
-                          disabled={editProjectLoading}
-                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="project-end-date" className="text-sm font-medium text-neutral-900">End Date (Optional)</Label>
-                        <Input
-                          id="project-end-date"
-                          type="date"
-                          value={projectFormData.endDate}
-                          onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                          disabled={editProjectLoading}
-                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                        />
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="clear-project-end-date"
-                            checked={!projectFormData.endDate}
-                            onChange={(e) => setProjectFormData(prev => ({ ...prev, endDate: e.target.checked ? '' : prev.startDate }))}
-                            className="h-4 w-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-600"
-                            disabled={editProjectLoading}
-                            title="No end date yet"
-                          />
-                          <Label htmlFor="clear-project-end-date" className="text-xs text-neutral-600 cursor-pointer">
-                            No end date yet
-                          </Label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="project-budget" className="text-sm font-medium text-neutral-900">Budget</Label>
-                        <Input
-                          id="project-budget"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={projectFormData.budget}
-                          onChange={(e) => setProjectFormData(prev => ({ ...prev, budget: e.target.value }))}
-                          placeholder="Enter budget"
-                          disabled={editProjectLoading}
-                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="project-estimated-cost" className="text-sm font-medium text-neutral-900">Estimated Cost</Label>
-                        <Input
-                          id="project-estimated-cost"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={projectFormData.estimatedCost}
-                          onChange={(e) => setProjectFormData(prev => ({ ...prev, estimatedCost: e.target.value }))}
-                          placeholder="Enter estimated cost"
-                          disabled={editProjectLoading}
-                          className="rounded border-neutral-300 focus:border-blue-600 focus:ring-blue-600 h-8 text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setShowEditProjectDialog(false);
-                          resetProjectForm();
-                        }}
-                        disabled={editProjectLoading}
-                        className="rounded px-4 py-1.5 h-8 text-sm border-neutral-300 hover:bg-neutral-50"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={editProjectLoading || !projectFormData.name.trim() || !projectFormData.startDate}
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-0 rounded font-medium px-4 py-1.5 h-8 text-sm"
-                      >
-                        {editProjectLoading ? 'Saving...' : 'Save Changes'}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
               </Dialog>
               <Badge variant={getStatusVariant(project.status)} className="capitalize px-2 py-1 text-xs font-medium rounded">
                 {project.status}
@@ -701,26 +523,26 @@ const Project: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Fluent 2 Typography - Clean, readable */}
+      <div className={STYLE_CONSTANTS.layout.contentContainer}>
+        {/* Project Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-neutral-900 mb-2 tracking-normal">
+          <h1 className={STYLE_CONSTANTS.typography.pageTitle}>
             {project.name}
           </h1>
           {project.description && (
-            <p className="text-neutral-600 text-base max-w-4xl leading-relaxed">{project.description}</p>
+            <p className={STYLE_CONSTANTS.typography.description}>{project.description}</p>
           )}
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Main Content */}
-          <div className="xl:col-span-3 space-y-6">
-            {/* Fluent 2 Cards - Clean, elevated */}
-            <Card className="bg-white shadow-elevation-8 border border-neutral-200 rounded overflow-hidden">
-              <CardHeader className="bg-blue-600 text-white p-6 border-0">
-                <CardTitle className="text-lg font-semibold">Activity Overview</CardTitle>
+          <div className={`xl:col-span-3 ${STYLE_CONSTANTS.spacing.section}`}>
+            {/* Activity Overview Card */}
+            <Card className={STYLE_CONSTANTS.card.base}>
+              <CardHeader className={`${STYLE_CONSTANTS.card.blueHeader} ${STYLE_CONSTANTS.card.headerWithColor}`}>
+                <CardTitle className={STYLE_CONSTANTS.typography.cardTitle}>Activity Overview</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className={STYLE_CONSTANTS.card.content}>
                 <ActivityGrid 
                   events={events}
                   startDate={startDate}
@@ -1644,6 +1466,15 @@ const Project: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Project Dialog */}
+      <EditProjectDialog
+        isOpen={editProjectDialog.isOpen}
+        onOpenChange={editProjectDialog.onOpenChange}
+        onSubmit={handleUpdateProject}
+        project={project}
+        isLoading={editProjectLoading.isLoading}
+      />
     </div>
   );
 };
