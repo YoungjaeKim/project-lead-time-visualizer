@@ -19,13 +19,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { STYLE_CONSTANTS } from '@/styles/constants';
 import { useDialog, useFormLoading } from '@/hooks/useDialog';
+import { ExternalSourceCard } from '@/components/ExternalSourceCard';
 
 const Project: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -265,20 +264,6 @@ const Project: React.FC = () => {
   };
 
 
-
-  const getExternalSourceIcon = (type: string) => {
-    switch (type) {
-      case 'jira': return '🎯';
-      case 'github': return '📚';
-      case 'confluence': return '📖';
-      default: return '🔗';
-    }
-  };
-
-  const formatLastSync = (date?: Date) => {
-    if (!date) return 'Never';
-    return new Date(date).toLocaleString();
-  };
 
   const handleEventStatusChange = async (eventId: string, status: 'done' | 'ongoing' | 'notyet') => {
     try {
@@ -631,76 +616,17 @@ const Project: React.FC = () => {
               <CardContent className={STYLE_CONSTANTS.card.contentCompact}>
                 {externalSources.length > 0 ? (
                   <div className="space-y-3">
-                    {externalSources.map(source => {
-                      const projectMapping = source.projectMappings.find(
-                        mapping => mapping.internalProjectId === project?._id
-                      );
-                      return (
-                        <div key={source._id} className="p-3 bg-neutral-50 rounded border">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-base">{getExternalSourceIcon(source.type)}</span>
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <div className="font-medium text-neutral-900 text-sm">{source.name}</div>
-                                  <div className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                                    source.isActive 
-                                      ? 'bg-green-100 text-green-700 border border-green-200' 
-                                      : 'bg-red-100 text-red-700 border border-red-200'
-                                  }`}>
-                                    {source.isActive ? 'Active' : 'Disabled'}
-                                  </div>
-                                </div>
-                                <div className="text-xs text-neutral-500 capitalize">{source.type}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditExternalSourceDialog(source)}
-                                className="h-6 w-6 p-0 hover:bg-blue-100 text-blue-600"
-                                title="Edit"
-                              >
-                                ✏️
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleTestConnection(source._id)}
-                                className="h-6 w-6 p-0 hover:bg-green-100 text-green-600"
-                                title="Test Connection"
-                              >
-                                🔧
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleTriggerSync(source._id)}
-                                className="h-6 w-6 p-0 hover:bg-orange-100 text-orange-600"
-                                title="Trigger Sync"
-                              >
-                                🔄
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteExternalSource(source._id)}
-                                className="h-6 w-6 p-0 hover:bg-red-100 text-red-600"
-                                title="Remove"
-                              >
-                                🗑️
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="text-xs text-neutral-500 space-y-1">
-                            <div>External ID: <span className="font-mono">{projectMapping?.externalId}</span></div>
-                            <div>Last Sync: {formatLastSync(source.lastSyncAt)}</div>
-                            <div>Sync Every: {source.syncFrequency}h</div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {externalSources.map(source => (
+                      <ExternalSourceCard
+                        key={source._id}
+                        source={source}
+                        projectId={project?._id}
+                        onEdit={openEditExternalSourceDialog}
+                        onTestConnection={handleTestConnection}
+                        onTriggerSync={handleTriggerSync}
+                        onDelete={handleDeleteExternalSource}
+                      />
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -713,12 +639,6 @@ const Project: React.FC = () => {
           </div>
         </div>
       </div>
-
-
-
-
-
-
 
       {/* Add Event Dialog */}
       <AddEventDialog
