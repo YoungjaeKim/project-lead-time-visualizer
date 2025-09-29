@@ -42,6 +42,13 @@ const ProjectRow: React.FC<ProjectRowProps> = ({ project, onClick }) => {
   const adjustedStartDate = new Date();
   adjustedStartDate.setDate(adjustedStartDate.getDate() - 48);
 
+  const stopPropagationForInteractiveElements = (event: React.SyntheticEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('input, button, select, textarea, [role="button"]')) {
+      event.stopPropagation();
+    }
+  };
+
   return (
     <Card 
       className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
@@ -50,9 +57,8 @@ const ProjectRow: React.FC<ProjectRowProps> = ({ project, onClick }) => {
       <CardHeader className="pb-3">
         <div 
           className="mb-3"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
+          onClickCapture={stopPropagationForInteractiveElements}
+          onPointerDownCapture={stopPropagationForInteractiveElements}
         >
           <ActivityGrid 
             events={project.events || []} 

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Workspace, Project } from '../models';
+import { Workspace, Project, type IUserDocument } from '../models';
 
 export const createWorkspace = async (req: Request, res: Response) => {
   try {
@@ -47,6 +47,58 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
     }
     
     res.json(workspace);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+};
+
+export const getWorkspaceParticipants = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const workspace = await Workspace.findById(id).select('projects');
+
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    if (!workspace.projects || workspace.projects.length === 0) {
+      return res.json([]);
+    }
+
+    const projects = await Project.find({ _id: { $in: workspace.projects } })
+      .select('participants')
+      .populate<{ participants: IUserDocument[] }>(
+        'participants',
+        'name email role dailyFee level'
+      );
+
+    const participantsMap = new Map<string, IUserDocument>();
+
+    projects.forEach((project) => {
+      project.participants?.forEach((participant) => {
+        if (!participant) {
+          return;
+        }
+
+        const participantId = participant._id?.toString();
+
+        if (participantId && !participantsMap.has(participantId)) {
+          participantsMap.set(participantId, participant);
+        }
+      });
+    });
+
+    const participantsList = Array.from(participantsMap.values()).map((participant) => ({
+      _id: participant._id?.toString() ?? '',
+      name: participant.name,
+      email: participant.email,
+      role: participant.role,
+      dailyFee: participant.dailyFee,
+      level: participant.level
+    }));
+
+    res.json(participantsList);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }

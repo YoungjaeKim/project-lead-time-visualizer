@@ -12,6 +12,15 @@ export interface User {
   updatedAt: Date;
 }
 
+export interface WorkspaceParticipant {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  dailyFee: number;
+  level: User['level'];
+}
+
 export interface Organization {
   _id: string;
   name: string;

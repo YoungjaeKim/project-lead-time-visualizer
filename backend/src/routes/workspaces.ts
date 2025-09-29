@@ -6,7 +6,8 @@ import {
   updateWorkspace,
   deleteWorkspace,
   addProjectToWorkspace,
-  removeProjectFromWorkspace
+  removeProjectFromWorkspace,
+  getWorkspaceParticipants
 } from '../controllers';
 
 const router = Router();
@@ -14,6 +15,7 @@ const router = Router();
 router.post('/', createWorkspace);
 router.get('/', getWorkspaces);
 router.get('/:id', getWorkspaceById);
+router.get('/:id/participants', getWorkspaceParticipants);
 router.put('/:id', updateWorkspace);
 router.delete('/:id', deleteWorkspace);
 router.post('/:workspaceId/projects/:projectId', addProjectToWorkspace);

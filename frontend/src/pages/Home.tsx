@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Workspace, Project, User, Organization } from '../types';
 import { workspaceApi, userApi, organizationApi, projectApi } from '../services/api';
 import ProjectRow from '../components/ProjectRow';
@@ -13,7 +13,6 @@ import {
   type ProjectFormData
 } from '../components/dialogs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
@@ -44,6 +43,8 @@ const Home: React.FC = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationsLoading, setOrganizationsLoading] = useState(false);
+  const [participants, setParticipants] = useState<User[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
 
   useEffect(() => {
     loadWorkspaces();
@@ -64,6 +65,18 @@ const Home: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const loadParticipants = useCallback(async (workspaceId: string) => {
+    try {
+      setParticipantsLoading(true);
+      const response = await workspaceApi.getParticipants(workspaceId);
+      setParticipants(response.data);
+    } catch (err) {
+      console.error('Error loading workspace participants:', err);
+    } finally {
+      setParticipantsLoading(false);
+    }
+  }, []);
 
   const loadUsers = async () => {
     try {
@@ -97,10 +110,21 @@ const Home: React.FC = () => {
       const updatedWorkspace = response.data;
       setSelectedWorkspace(updatedWorkspace);
       setWorkspaces(prev => prev.map(w => w._id === updatedWorkspace._id ? updatedWorkspace : w));
+      await loadParticipants(updatedWorkspace._id);
     } catch (err) {
       console.error('Error refreshing workspace:', err);
     }
   };
+
+  const selectedWorkspaceId = selectedWorkspace?._id;
+
+  useEffect(() => {
+    if (selectedWorkspaceId) {
+      loadParticipants(selectedWorkspaceId);
+    } else {
+      setParticipants([]);
+    }
+  }, [selectedWorkspaceId, loadParticipants]);
 
   const handleCreateWorkspace = async (data: WorkspaceFormData) => {
     try {
@@ -116,6 +140,7 @@ const Home: React.FC = () => {
       
       setWorkspaces(prev => [...prev, newWorkspace]);
       setSelectedWorkspace(newWorkspace);
+      await loadParticipants(newWorkspace._id);
     } catch (err) {
       console.error('Error creating workspace:', err);
       setError('Failed to create workspace');
@@ -423,6 +448,34 @@ const Home: React.FC = () => {
                 </Dialog>
               </div>
             )}
+
+            <div className={STYLE_CONSTANTS.spacing.section}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <h3 className={STYLE_CONSTANTS.typography.sectionTitle}>Participants</h3>
+              </div>
+              {participantsLoading ? (
+                <div className="text-neutral-500 text-sm">Loading participants...</div>
+              ) : participants.length > 0 ? (
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${STYLE_CONSTANTS.spacing.gridGapSmall}`}>
+                  {participants.map(participant => (
+                    <Card key={participant._id} className={STYLE_CONSTANTS.card.base}>
+                      <CardHeader>
+                        <CardTitle className="text-base font-semibold">
+                          {participant.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className={`${STYLE_CONSTANTS.card.content} space-y-1`}>
+                        <div className="text-sm text-neutral-600">{participant.email}</div>
+                        <div className="text-sm text-neutral-500">{participant.role}</div>
+                        <div className="text-xs text-neutral-400">{participant.level} · Daily Fee: ${participant.dailyFee}</div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-neutral-500 text-sm">No participants found for this workspace.</div>
+              )}
+            </div>
           </>
         ) : (
           <div className="text-center py-16">

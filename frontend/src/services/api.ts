@@ -20,6 +20,8 @@ export const workspaceApi = {
     api.post(`/workspaces/${workspaceId}/projects/${projectId}`),
   removeProject: (workspaceId: string, projectId: string) => 
     api.delete(`/workspaces/${workspaceId}/projects/${projectId}`),
+  getParticipants: (workspaceId: string) =>
+    api.get<User[]>(`/workspaces/${workspaceId}/participants`),
 };
 
 export const projectApi = {
