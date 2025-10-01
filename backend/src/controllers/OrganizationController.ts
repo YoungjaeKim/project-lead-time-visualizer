@@ -21,10 +21,12 @@ export const createOrganization = async (req: Request, res: Response) => {
 
 export const getOrganizations = async (req: Request, res: Response) => {
   try {
+    // Don't populate parentOrganization or childOrganizations - we need the ID strings for tree building
+    // Sort by parentOrganization to ensure parents come before children
     const organizations = await Organization.find()
-      .populate('parentOrganization', 'name')
-      .populate('childOrganizations', 'name')
+      .sort({ parentOrganization: 1 }) // null values first (root orgs)
       .populate('members', 'name email role');
+    
     res.json(organizations);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });

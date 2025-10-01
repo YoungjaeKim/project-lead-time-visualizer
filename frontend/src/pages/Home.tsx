@@ -311,6 +311,13 @@ const Home: React.FC = () => {
             </h1>
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Button 
+                onClick={() => window.location.href = '/organization'} 
+                className={`${STYLE_CONSTANTS.button.secondary} ${STYLE_CONSTANTS.button.sizes.sm}`}
+              >
+                Organization
+              </Button>
+              
               {workspaces.length > 1 && (
                 <Select 
                   value={selectedWorkspace?._id || ''} 
@@ -331,28 +338,6 @@ const Home: React.FC = () => {
                   </SelectContent>
                 </Select>
               )}
-              
-              <Dialog open={organizationDialog.isOpen} onOpenChange={organizationDialog.onOpenChange}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={openOrganizationDialog} 
-                    className={`${STYLE_CONSTANTS.button.secondary} ${STYLE_CONSTANTS.button.sizes.sm}`}
-                  >
-                    Add Organization
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-              
-              <Dialog open={userDialog.isOpen} onOpenChange={userDialog.onOpenChange}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={openUserDialog} 
-                    className={`${STYLE_CONSTANTS.button.secondary} ${STYLE_CONSTANTS.button.sizes.sm}`}
-                  >
-                    Add User
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
               
               <Dialog open={workspaceDialog.isOpen} onOpenChange={workspaceDialog.onOpenChange}>
                 <DialogTrigger asChild>
