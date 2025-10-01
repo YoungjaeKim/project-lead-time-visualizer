@@ -38,9 +38,6 @@ const ProjectRow: React.FC<ProjectRowProps> = ({ project, onClick }) => {
 
   const startDate = new Date(project.startDate);
   const endDate = project.endDate ? new Date(project.endDate) : new Date();
-  
-  const adjustedStartDate = new Date();
-  adjustedStartDate.setDate(adjustedStartDate.getDate() - 48);
 
   const stopPropagationForInteractiveElements = (event: React.SyntheticEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
@@ -62,8 +59,8 @@ const ProjectRow: React.FC<ProjectRowProps> = ({ project, onClick }) => {
         >
           <ActivityGrid 
             events={project.events || []} 
-            startDate={adjustedStartDate}
-            endDate={new Date()}
+            startDate={startDate}
+            endDate={project.endDate ? endDate : undefined}
           />
         </div>
         
