@@ -6,3 +6,5 @@ export { EditProjectDialog, type EditProjectFormData } from './EditProjectDialog
 export { AddEventDialog, type EventFormData } from './AddEventDialog';
 export { AddExternalSourceDialog, type ExternalSourceFormData } from './AddExternalSourceDialog';
 export { EditExternalSourceDialog, type EditExternalSourceFormData } from './EditExternalSourceDialog';
+export { AddParticipantGroupDialog, type ParticipantGroupFormData } from './AddParticipantGroupDialog';
+export { AddMemberDialog, type MemberFormData } from './AddMemberDialog';

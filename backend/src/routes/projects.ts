@@ -5,8 +5,6 @@ import {
   getProjectById,
   updateProject,
   deleteProject,
-  addParticipant,
-  removeParticipant,
   getProjectCostAnalysis
 } from '../controllers';
 
@@ -18,7 +16,8 @@ router.get('/:id', getProjectById);
 router.put('/:id', updateProject);
 router.delete('/:id', deleteProject);
 router.get('/:id/cost-analysis', getProjectCostAnalysis);
-router.post('/:projectId/participants/:userId', addParticipant);
-router.delete('/:projectId/participants/:userId', removeParticipant);
+
+// Note: Participant management is now handled through /api/participants routes
+// See participants.ts for participant group and member management
 
 export default router;

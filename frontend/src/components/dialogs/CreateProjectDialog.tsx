@@ -14,7 +14,7 @@ export interface ProjectFormData {
   status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
   startDate: string;
   endDate: string;
-  participants: string[];
+  // Note: Participants are now managed separately via participant groups after project creation
   budget: string;
   estimatedCost: string;
 }
@@ -23,8 +23,8 @@ interface CreateProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ProjectFormData) => Promise<void>;
-  users: User[];
-  usersLoading: boolean;
+  users: User[]; // Kept for backward compatibility, may be removed
+  usersLoading: boolean; // Kept for backward compatibility, may be removed
   isLoading: boolean;
 }
 
@@ -34,7 +34,6 @@ const initialFormData: ProjectFormData = {
   status: 'planning',
   startDate: '',
   endDate: '',
-  participants: [],
   budget: '',
   estimatedCost: ''
 };
@@ -67,15 +66,6 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
     onOpenChange(false);
   };
 
-  const handleParticipantToggle = (userId: string) => {
-    const currentParticipants = formData.participants;
-    const isSelected = currentParticipants.indexOf(userId) !== -1;
-    const newParticipants = isSelected
-      ? currentParticipants.filter(id => id !== userId)
-      : [...currentParticipants, userId];
-    
-    updateField('participants', newParticipants);
-  };
 
   const isSubmitDisabled = isLoading || !formData.name.trim() || !formData.startDate;
 
@@ -211,34 +201,10 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
           </div>
 
           <div className={STYLE_CONSTANTS.form.field}>
-            <Label className={STYLE_CONSTANTS.form.label}>Participants</Label>
-            {usersLoading ? (
-              <div className="text-sm text-neutral-500 py-2">Loading users...</div>
-            ) : (
-              <div className="max-h-32 overflow-y-auto border border-neutral-300 rounded p-3 space-y-2 bg-neutral-50">
-                {users.map(user => (
-                  <div key={user._id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`participant-${user._id}`}
-                      checked={formData.participants.indexOf(user._id) !== -1}
-                      onChange={() => handleParticipantToggle(user._id)}
-                      className={STYLE_CONSTANTS.form.checkbox}
-                      disabled={isLoading}
-                      aria-labelledby={`participant-label-${user._id}`}
-                      title={`Select ${user.name} as participant`}
-                    />
-                    <Label 
-                      htmlFor={`participant-${user._id}`} 
-                      id={`participant-label-${user._id}`}
-                      className={STYLE_CONSTANTS.form.label}
-                    >
-                      {user.name} ({user.email})
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+              <strong>Note:</strong> Team members are now organized into participant groups. 
+              After creating the project, you can add participant groups and assign members with specific roles.
+            </div>
           </div>
           
           <div className={STYLE_CONSTANTS.dialog.footer}>

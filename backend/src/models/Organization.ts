@@ -18,10 +18,6 @@ const OrganizationSchema: Schema = new Schema({
     ref: 'Organization',
     default: null
   },
-  childOrganizations: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Organization'
-  }],
   members: [{
     type: Schema.Types.ObjectId,
     ref: 'User'

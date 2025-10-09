@@ -1,8 +1,28 @@
 import { Project, User, Event } from '../types';
 
+// Helper function to get all users from participant groups
+const getAllUsersFromParticipants = (project: Project): User[] => {
+  if (!project.participants) return [];
+  
+  const users: User[] = [];
+  const userMap = new Map<string, User>();
+  
+  project.participants.forEach(participantGroup => {
+    participantGroup.members.forEach(member => {
+      if (!userMap.has(member.user._id)) {
+        userMap.set(member.user._id, member.user);
+        users.push(member.user);
+      }
+    });
+  });
+  
+  return users;
+};
+
 export const calculateProjectCost = (project: Project): number => {
   if (!project.participants || !project.events) return 0;
   
+  const allUsers = getAllUsersFromParticipants(project);
   let totalCost = 0;
   
   project.events.forEach(event => {
@@ -12,10 +32,10 @@ export const calculateProjectCost = (project: Project): number => {
         .filter(Boolean) as string[];
 
       participantIds.forEach(participantId => {
-        const participant = project.participants.find(p => p._id === participantId);
-        if (participant) {
+        const user = allUsers.find(u => u._id === participantId);
+        if (user) {
           const dailyHours = 8;
-          const hourlyRate = participant.dailyFee / dailyHours;
+          const hourlyRate = user.dailyFee / dailyHours;
           totalCost += event.actualHours! * hourlyRate;
         }
       });

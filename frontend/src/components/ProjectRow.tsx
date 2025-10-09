@@ -91,8 +91,10 @@ const ProjectRow: React.FC<ProjectRowProps> = ({ project, onClick }) => {
           )}
           
           <div className="space-y-1">
-            <span className="text-muted-foreground">Participants</span>
-            <div className="font-medium">{project.participants?.length || 0}</div>
+            <span className="text-muted-foreground">Team Members</span>
+            <div className="font-medium">
+              {project.participants?.reduce((count, group) => count + group.members.length, 0) || 0}
+            </div>
           </div>
           
           <div className="space-y-1">

@@ -89,9 +89,11 @@ const Organization: React.FC = () => {
     try {
       setProjectsLoading(true);
       const response = await projectApi.getAll();
-      // Filter projects where user is a participant
+      // Filter projects where user is a member in any participant group
       const filteredProjects = response.data.filter(project => 
-        project.participants.some(p => p._id === userId)
+        project.participants.some(participantGroup => 
+          participantGroup.members.some(member => member.user._id === userId)
+        )
       );
       setUserProjects(filteredProjects);
     } catch (err) {

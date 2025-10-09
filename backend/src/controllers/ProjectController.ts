@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Project, Event, User } from '../models';
+import { Project, Event, Participant } from '../models';
 
 export const createProject = async (req: Request, res: Response) => {
   try {
@@ -14,7 +14,13 @@ export const createProject = async (req: Request, res: Response) => {
 export const getProjects = async (req: Request, res: Response) => {
   try {
     const projects = await Project.find()
-      .populate('participants', 'name email role dailyFee')
+      .populate({
+        path: 'participants',
+        populate: {
+          path: 'members.user',
+          select: 'name email role dailyFee'
+        }
+      })
       .populate('events', 'title status startDate endDate');
     res.json(projects);
   } catch (error) {
@@ -25,7 +31,13 @@ export const getProjects = async (req: Request, res: Response) => {
 export const getProjectById = async (req: Request, res: Response) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('participants', 'name email role skills dailyFee level')
+      .populate({
+        path: 'participants',
+        populate: {
+          path: 'members.user',
+          select: 'name email role skills dailyFee level'
+        }
+      })
       .populate({
         path: 'events',
         populate: {
@@ -70,7 +82,9 @@ export const deleteProject = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    // Clean up related data
     await Event.deleteMany({ projectId: req.params.id });
+    await Participant.deleteMany({ projectId: req.params.id });
     
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
@@ -78,67 +92,52 @@ export const deleteProject = async (req: Request, res: Response) => {
   }
 };
 
-export const addParticipant = async (req: Request, res: Response) => {
-  try {
-    const { projectId, userId } = req.params;
-    
-    const project = await Project.findById(projectId);
-    const user = await User.findById(userId);
-    
-    if (!project || !user) {
-      return res.status(404).json({ error: 'Project or User not found' });
-    }
-    
-    if (!project.participants.includes(userId as any)) {
-      project.participants.push(userId as any);
-      await project.save();
-    }
-    
-    res.json(project);
-  } catch (error) {
-    res.status(400).json({ error: (error as Error).message });
-  }
-};
-
-export const removeParticipant = async (req: Request, res: Response) => {
-  try {
-    const { projectId, userId } = req.params;
-    
-    const project = await Project.findById(projectId);
-    
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    
-    project.participants = project.participants.filter(
-      (id) => id.toString() !== userId
-    );
-    await project.save();
-    
-    res.json(project);
-  } catch (error) {
-    res.status(400).json({ error: (error as Error).message });
-  }
-};
+// Note: Participant management is now handled through ParticipantController
+// Use the /api/participants/:participantId/members endpoints instead
 
 export const getProjectCostAnalysis = async (req: Request, res: Response) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('participants', 'name dailyFee level')
+      .populate({
+        path: 'participants',
+        populate: {
+          path: 'members.user',
+          select: 'name dailyFee level'
+        }
+      })
       .populate('events', 'title actualHours estimatedHours participants');
     
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    // Collect all unique users from participant groups
+    const allUsers = new Map();
+    (project.participants as any).forEach((participantGroup: any) => {
+      participantGroup.members.forEach((member: any) => {
+        const userId = member.user._id.toString();
+        if (!allUsers.has(userId)) {
+          allUsers.set(userId, {
+            name: member.user.name,
+            dailyFee: member.user.dailyFee,
+            level: member.user.level,
+            roles: new Set()
+          });
+        }
+        // Aggregate roles across all participant groups
+        member.roles.forEach((role: string) => allUsers.get(userId).roles.add(role));
+      });
+    });
+    
     const costAnalysis = {
       estimatedCost: project.estimatedCost || 0,
       actualCost: project.actualCost || 0,
       budget: project.budget || 0,
-      participantCosts: project.participants.map((participant: any) => ({
-        name: participant.name,
-        dailyFee: participant.dailyFee,
-        level: participant.level
+      participantCosts: Array.from(allUsers.values()).map(user => ({
+        name: user.name,
+        dailyFee: user.dailyFee,
+        level: user.level,
+        roles: Array.from(user.roles)
       }))
     };
     

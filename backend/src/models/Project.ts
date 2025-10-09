@@ -28,7 +28,7 @@ const ProjectSchema: Schema = new Schema({
   },
   participants: [{
     type: Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'Participant'
   }],
   events: [{
     type: Schema.Types.ObjectId,

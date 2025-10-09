@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Project as ProjectType, Event, User, ExternalSourceConfig } from '../types';
-import { projectApi, eventApi, userApi, externalSourceApi } from '@/services/api';
+import { Project as ProjectType, Event, User, ExternalSourceConfig, Participant } from '../types';
+import { projectApi, eventApi, userApi, externalSourceApi, participantApi } from '@/services/api';
 import { formatDate } from '@/utils/dateUtils';
 import { formatCurrency, calculateProjectCost, calculateBudgetUsage, getBudgetStatus } from '@/utils/costUtils';
 import EventCard from '../components/EventCard';
@@ -14,7 +14,11 @@ import {
   AddExternalSourceDialog,
   type ExternalSourceFormData as DialogExternalSourceFormData,
   EditExternalSourceDialog,
-  type EditExternalSourceFormData
+  type EditExternalSourceFormData,
+  AddParticipantGroupDialog,
+  type ParticipantGroupFormData,
+  AddMemberDialog,
+  type MemberFormData
 } from '../components/dialogs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +29,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { STYLE_CONSTANTS } from '@/styles/constants';
 import { useDialog, useFormLoading } from '@/hooks/useDialog';
 import { ExternalSourceCard } from '@/components/ExternalSourceCard';
+import { Users, Trash2 } from 'lucide-react';
 
 const Project: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,14 +51,21 @@ const Project: React.FC = () => {
   const addEventDialog = useDialog();
   const addExternalSourceDialog = useDialog();
   const editExternalSourceDialog = useDialog();
+  const addParticipantGroupDialog = useDialog();
+  const addMemberDialog = useDialog();
   
   // Loading states using custom hooks
   const addEventLoading = useFormLoading();
   const addExternalSourceLoading = useFormLoading();
   const editExternalSourceLoading = useFormLoading();
+  const addParticipantGroupLoading = useFormLoading();
+  const addMemberLoading = useFormLoading();
   
   // External source editing state
   const [editingExternalSource, setEditingExternalSource] = useState<ExternalSourceConfig | null>(null);
+  
+  // Participant management state
+  const [selectedGroupForMember, setSelectedGroupForMember] = useState<Participant | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -74,6 +86,8 @@ const Project: React.FC = () => {
       
       setProject(projectResponse.data);
       setEvents(eventsResponse.data);
+      
+      // Store all users for member selection
       setAllUsers(usersResponse.data);
       
       // Load external sources for this project
@@ -84,6 +98,23 @@ const Project: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to extract all users from participant groups
+  const extractUsersFromParticipants = (project: ProjectType): User[] => {
+    if (!project.participants || project.participants.length === 0) return [];
+    
+    const userMap = new Map<string, User>();
+    
+    project.participants.forEach(participantGroup => {
+      participantGroup.members.forEach(member => {
+        if (!userMap.has(member.user._id)) {
+          userMap.set(member.user._id, member.user);
+        }
+      });
+    });
+    
+    return Array.from(userMap.values());
   };
 
   const openEditProjectDialog = () => {
@@ -316,6 +347,83 @@ const Project: React.FC = () => {
     }
   };
 
+  const handleCreateParticipantGroup = async (data: ParticipantGroupFormData) => {
+    if (!project) return;
+
+    try {
+      addParticipantGroupLoading.startLoading();
+      const groupData = {
+        name: data.name.trim(),
+        description: data.description.trim() || undefined,
+        parentParticipant: data.parentParticipant || undefined,
+        members: []
+      };
+      
+      await participantApi.create(project._id, groupData);
+      
+      // Reload project to get updated participants
+      await loadProjectData();
+    } catch (err) {
+      console.error('Error creating participant group:', err);
+      setError('Failed to create participant group');
+      throw err;
+    } finally {
+      addParticipantGroupLoading.stopLoading();
+    }
+  };
+
+  const openAddMemberDialog = (group: Participant) => {
+    setSelectedGroupForMember(group);
+    addMemberDialog.open();
+  };
+
+  const handleAddMember = async (data: MemberFormData) => {
+    if (!selectedGroupForMember) return;
+
+    try {
+      addMemberLoading.startLoading();
+      await participantApi.addMember(selectedGroupForMember._id, data.userId, data.roles);
+      
+      // Reload project to get updated participants
+      await loadProjectData();
+      setSelectedGroupForMember(null);
+    } catch (err) {
+      console.error('Error adding member:', err);
+      setError('Failed to add member');
+      throw err;
+    } finally {
+      addMemberLoading.stopLoading();
+    }
+  };
+
+  const handleRemoveMember = async (participantId: string, userId: string) => {
+    if (!window.confirm('Are you sure you want to remove this member?')) return;
+
+    try {
+      await participantApi.removeMember(participantId, userId);
+      
+      // Reload project to get updated participants
+      await loadProjectData();
+    } catch (err) {
+      console.error('Error removing member:', err);
+      setError('Failed to remove member');
+    }
+  };
+
+  const handleDeleteParticipantGroup = async (participantId: string) => {
+    if (!window.confirm('Are you sure you want to delete this participant group? This will also remove all its members.')) return;
+
+    try {
+      await participantApi.delete(participantId);
+      
+      // Reload project to get updated participants
+      await loadProjectData();
+    } catch (err) {
+      console.error('Error deleting participant group:', err);
+      setError('Failed to delete participant group');
+    }
+  };
+
 
 
   const getFilteredEvents = () => {
@@ -483,7 +591,7 @@ const Project: React.FC = () => {
                       <EventCard
                         key={event._id}
                         event={event}
-                        participants={allUsers}
+                        participants={extractUsersFromParticipants(project)}
                         onStatusChange={handleEventStatusChange}
                         onEventUpdated={handleEventUpdated}
                         onEventDeleted={handleEventDeleted}
@@ -573,28 +681,91 @@ const Project: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Team Members */}
-            {project.participants && project.participants.length > 0 && (
-              <Card className={STYLE_CONSTANTS.card.base}>
-                <CardHeader className={`${STYLE_CONSTANTS.card.darkBlueHeader} ${STYLE_CONSTANTS.card.contentCompact} border-0`}>
-                  <CardTitle className={STYLE_CONSTANTS.typography.cardTitleSmall}>Team Members</CardTitle>
-                </CardHeader>
-                <CardContent className={`${STYLE_CONSTANTS.card.contentCompact} space-y-3`}>
-                  {project.participants.map(participant => (
-                    <div key={participant._id} className="flex items-center justify-between p-3 bg-neutral-50 rounded">
-                      <div>
-                        <div className="font-medium text-neutral-900 text-sm">{participant.name}</div>
-                        <div className="text-xs text-neutral-500">{participant.role}</div>
+            {/* Team Structure - Hierarchical Participant Groups */}
+            <Card className={STYLE_CONSTANTS.card.base}>
+              <CardHeader className={`${STYLE_CONSTANTS.card.darkBlueHeader} ${STYLE_CONSTANTS.card.contentCompact} border-0`}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className={STYLE_CONSTANTS.typography.cardTitleSmall}>Team Structure</CardTitle>
+                  <Dialog open={addParticipantGroupDialog.isOpen} onOpenChange={addParticipantGroupDialog.onOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        onClick={() => addParticipantGroupDialog.open()}
+                        className={`${STYLE_CONSTANTS.button.white} text-blue-800 ${STYLE_CONSTANTS.button.sizes.xs}`}
+                      >
+                        + Group
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent className={`${STYLE_CONSTANTS.card.contentCompact} space-y-4`}>
+                {project.participants && project.participants.length > 0 ? (
+                  project.participants.map(participantGroup => (
+                    <div key={participantGroup._id} className="border border-neutral-200 rounded-lg p-3 bg-white">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="font-semibold text-neutral-900 text-sm flex items-center gap-2">
+                            <span className="text-blue-600">◆</span>
+                            {participantGroup.name}
+                          </div>
+                          {participantGroup.description && (
+                            <div className="text-xs text-neutral-500 ml-5 mt-1">{participantGroup.description}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            onClick={() => openAddMemberDialog(participantGroup)}
+                            className="h-6 px-2 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded"
+                          >
+                            <Users className="w-3 h-3 mr-1" />
+                            Add
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteParticipantGroup(participantGroup._id)}
+                            className="h-6 px-2 text-xs bg-red-50 text-red-700 hover:bg-red-100 rounded"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xs text-neutral-500">{participant.level}</div>
-                        <div className="font-medium text-neutral-900 text-sm">{formatCurrency(participant.dailyFee)}/day</div>
-                      </div>
+                      
+                      {participantGroup.members && participantGroup.members.length > 0 ? (
+                        <div className="space-y-2 pl-4 mt-3">
+                          {participantGroup.members.map(member => (
+                            <div key={member.user._id} className="flex items-center justify-between p-2 bg-neutral-50 rounded group">
+                              <div className="flex-1">
+                                <div className="font-medium text-neutral-900 text-sm">{member.user.name}</div>
+                                <div className="text-xs text-neutral-500">
+                                  {member.roles.join(', ')} • {member.user.level}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-right">
+                                  <div className="font-medium text-neutral-900 text-sm">{formatCurrency(member.user.dailyFee)}/day</div>
+                                </div>
+                                <Button
+                                  onClick={() => handleRemoveMember(participantGroup._id, member.user._id)}
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 text-red-700 hover:bg-red-100 rounded"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-neutral-400 italic pl-4 mt-2">No members yet</div>
+                      )}
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="text-neutral-500 text-sm mb-2">No participant groups</div>
+                    <p className="text-neutral-400 text-xs">Add a group to organize team members</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* External Sources */}
             <Card className={STYLE_CONSTANTS.card.base}>
@@ -645,7 +816,7 @@ const Project: React.FC = () => {
         isOpen={addEventDialog.isOpen}
         onOpenChange={addEventDialog.onOpenChange}
         onSubmit={handleCreateEvent}
-        users={allUsers}
+        users={extractUsersFromParticipants(project)}
         usersLoading={false}
         isLoading={addEventLoading.isLoading}
       />
@@ -675,6 +846,26 @@ const Project: React.FC = () => {
         onSubmit={handleUpdateProject}
         project={project}
         isLoading={editProjectLoading.isLoading}
+      />
+
+      {/* Add Participant Group Dialog */}
+      <AddParticipantGroupDialog
+        isOpen={addParticipantGroupDialog.isOpen}
+        onOpenChange={addParticipantGroupDialog.onOpenChange}
+        onSubmit={handleCreateParticipantGroup}
+        existingGroups={project?.participants || []}
+        isLoading={addParticipantGroupLoading.isLoading}
+      />
+
+      {/* Add Member Dialog */}
+      <AddMemberDialog
+        isOpen={addMemberDialog.isOpen}
+        onOpenChange={addMemberDialog.onOpenChange}
+        onSubmit={handleAddMember}
+        availableUsers={allUsers}
+        existingMemberIds={selectedGroupForMember?.members.map(m => m.user._id) || []}
+        isLoading={addMemberLoading.isLoading}
+        groupName={selectedGroupForMember?.name || ''}
       />
     </div>
   );

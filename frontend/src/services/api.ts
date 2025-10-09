@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Workspace, Project, Event, User, Organization, ExternalSourceConfig } from '../types';
+import { Workspace, Project, Event, User, Organization, ExternalSourceConfig, Participant } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -31,10 +31,28 @@ export const projectApi = {
   update: (id: string, data: Partial<Project>) => api.put<Project>(`/projects/${id}`, data),
   delete: (id: string) => api.delete(`/projects/${id}`),
   getCostAnalysis: (id: string) => api.get(`/projects/${id}/cost-analysis`),
-  addParticipant: (projectId: string, userId: string) => 
-    api.post(`/projects/${projectId}/participants/${userId}`),
-  removeParticipant: (projectId: string, userId: string) => 
-    api.delete(`/projects/${projectId}/participants/${userId}`),
+};
+
+export const participantApi = {
+  // Participant group management
+  create: (projectId: string, data: Partial<Participant>) => 
+    api.post<Participant>(`/api/projects/${projectId}/participants`, data),
+  getByProject: (projectId: string) => 
+    api.get<Participant[]>(`/api/projects/${projectId}/participants`),
+  getById: (id: string) => 
+    api.get<Participant>(`/api/participants/${id}`),
+  update: (id: string, data: Partial<Participant>) => 
+    api.put<Participant>(`/api/participants/${id}`, data),
+  delete: (id: string) => 
+    api.delete(`/api/participants/${id}`),
+  
+  // Member management within participant groups
+  addMember: (participantId: string, userId: string, roles: string[]) => 
+    api.post(`/api/participants/${participantId}/members`, { userId, roles }),
+  updateMemberRoles: (participantId: string, userId: string, roles: string[]) => 
+    api.put(`/api/participants/${participantId}/members/${userId}`, { roles }),
+  removeMember: (participantId: string, userId: string) => 
+    api.delete(`/api/participants/${participantId}/members/${userId}`),
 };
 
 export const eventApi = {

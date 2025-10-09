@@ -16,7 +16,6 @@ export interface IOrganization {
   name: string;
   description?: string;
   parentOrganization?: string;
-  childOrganizations: string[];
   members: string[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -42,13 +41,28 @@ export interface IEvent {
   updatedAt?: Date;
 }
 
+export interface IParticipantMember {
+  user: string; // User ID
+  roles: string[]; // Multiple roles for this user in this participant group
+}
+
+export interface IParticipant {
+  name: string;
+  description?: string;
+  projectId: string;
+  parentParticipant?: string;
+  members: IParticipantMember[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface IProject {
   name: string;
   description?: string;
   status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
   startDate: Date;
   endDate?: Date;
-  participants: string[];
+  participants: string[]; // Now references Participant model, not User
   events: string[];
   budget?: number;
   estimatedCost?: number;

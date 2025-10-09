@@ -26,7 +26,6 @@ export interface Organization {
   name: string;
   description?: string;
   parentOrganization?: string;
-  childOrganizations: string[];
   members: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +52,22 @@ export interface Event {
   updatedAt: Date;
 }
 
+export interface ParticipantMember {
+  user: User;
+  roles: string[]; // Multiple project-specific roles (PM, Dev, Frontend Dev, QA, etc.)
+}
+
+export interface Participant {
+  _id: string;
+  name: string;
+  description?: string;
+  projectId: string;
+  parentParticipant?: string | Participant;
+  members: ParticipantMember[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Project {
   _id: string;
   name: string;
@@ -60,7 +75,7 @@ export interface Project {
   status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
   startDate: Date;
   endDate?: Date;
-  participants: User[];
+  participants: Participant[]; // Changed from User[] to Participant[]
   events: Event[];
   budget?: number;
   estimatedCost?: number;

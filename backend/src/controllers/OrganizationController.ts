@@ -6,12 +6,7 @@ export const createOrganization = async (req: Request, res: Response) => {
     const organization = new Organization(req.body);
     await organization.save();
     
-    if (organization.parentOrganization) {
-      await Organization.findByIdAndUpdate(
-        organization.parentOrganization,
-        { $push: { childOrganizations: organization._id } }
-      );
-    }
+    // No need to update parent - children queried dynamically via parentOrganization
     
     res.status(201).json(organization);
   } catch (error) {
@@ -37,14 +32,20 @@ export const getOrganizationById = async (req: Request, res: Response) => {
   try {
     const organization = await Organization.findById(req.params.id)
       .populate('parentOrganization', 'name description')
-      .populate('childOrganizations', 'name description')
       .populate('members', 'name email role skills level dailyFee');
     
     if (!organization) {
       return res.status(404).json({ error: 'Organization not found' });
     }
     
-    res.json(organization);
+    // Get children dynamically by querying parentOrganization
+    const children = await Organization.find({ parentOrganization: req.params.id })
+      .select('name description');
+    
+    res.json({
+      ...organization.toObject(),
+      children // Add as virtual field for backward compatibility
+    });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -76,13 +77,9 @@ export const deleteOrganization = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Organization not found' });
     }
     
-    if (organization.parentOrganization) {
-      await Organization.findByIdAndUpdate(
-        organization.parentOrganization,
-        { $pull: { childOrganizations: organization._id } }
-      );
-    }
+    // No need to update parent - child array removed
     
+    // Orphan child organizations (set their parent to null)
     await Organization.updateMany(
       { parentOrganization: organization._id },
       { $unset: { parentOrganization: 1 } }
@@ -139,17 +136,36 @@ export const removeMember = async (req: Request, res: Response) => {
 
 export const getOrganizationHierarchy = async (req: Request, res: Response) => {
   try {
-    const rootOrganizations = await Organization.find({ parentOrganization: null })
-      .populate({
-        path: 'childOrganizations',
-        populate: {
-          path: 'childOrganizations members',
-          select: 'name email role'
-        }
-      })
-      .populate('members', 'name email role');
+    // Get all organizations and build hierarchy in memory
+    const allOrganizations = await Organization.find()
+      .populate('members', 'name email role')
+      .lean();
     
-    res.json(rootOrganizations);
+    // Build tree structure from parent references
+    const orgMap = new Map();
+    const rootOrgs: any[] = [];
+    
+    // Initialize all orgs in map with empty children array
+    allOrganizations.forEach(org => {
+      orgMap.set(org._id.toString(), { ...org, children: [] });
+    });
+    
+    // Build parent-child relationships
+    allOrganizations.forEach(org => {
+      const node = orgMap.get(org._id.toString());
+      if (org.parentOrganization) {
+        const parent = orgMap.get(org.parentOrganization.toString());
+        if (parent) {
+          parent.children.push(node);
+        } else {
+          rootOrgs.push(node); // Parent not found, treat as root
+        }
+      } else {
+        rootOrgs.push(node);
+      }
+    });
+    
+    res.json(rootOrgs);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
