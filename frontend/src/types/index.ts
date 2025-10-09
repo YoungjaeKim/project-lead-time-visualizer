@@ -75,7 +75,6 @@ export interface Workspace {
   description?: string;
   projects: Project[];
   owner: string;
-  members: string[];
   createdAt: Date;
   updatedAt: Date;
 }

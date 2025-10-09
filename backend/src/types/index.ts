@@ -62,7 +62,6 @@ export interface IWorkspace {
   description?: string;
   projects: string[];
   owner: string;
-  members: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }

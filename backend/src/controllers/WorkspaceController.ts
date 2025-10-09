@@ -15,7 +15,6 @@ export const getWorkspaces = async (req: Request, res: Response) => {
   try {
     const workspaces = await Workspace.find()
       .populate('owner', 'name email')
-      .populate('members', 'name email')
       .populate({
         path: 'projects',
         populate: {
@@ -33,7 +32,6 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
   try {
     const workspace = await Workspace.findById(req.params.id)
       .populate('owner', 'name email')
-      .populate('members', 'name email')
       .populate({
         path: 'projects',
         populate: {
