@@ -1,10 +1,10 @@
 import React, { useMemo, useCallback } from 'react';
-import { 
-  ReactFlow, 
-  Node, 
-  Edge, 
-  Background, 
-  Controls, 
+import {
+  ReactFlow,
+  Node,
+  Edge,
+  Background,
+  Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
@@ -30,7 +30,7 @@ interface OrganizationNodeData extends Record<string, unknown> {
 // Custom node component
 const OrganizationNode: React.FC<{ data: OrganizationNodeData }> = ({ data }) => {
   const { organization, userCount } = data;
-  
+
   return (
     <div className="px-4 py-3 shadow-md rounded-lg bg-white border-2 border-blue-400 min-w-[200px]">
       <div className="flex items-center gap-2 mb-1">
@@ -58,10 +58,10 @@ const nodeTypes = {
   organizationNode: OrganizationNode,
 };
 
-const OrganizationTree: React.FC<OrganizationTreeProps> = ({ 
-  organizations, 
+const OrganizationTree: React.FC<OrganizationTreeProps> = ({
+  organizations,
   users,
-  onOrganizationClick 
+  onOrganizationClick
 }) => {
   // Calculate positions using a simple tree layout algorithm
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -72,12 +72,12 @@ const OrganizationTree: React.FC<OrganizationTreeProps> = ({
     // Helper function to extract parent ID (handles string and populated object)
     const getParentId = (org: Organization): string | undefined => {
       if (!org.parentOrganization) return undefined;
-      
+
       // If parentOrganization is populated as an object, extract _id
       if (typeof org.parentOrganization === 'object' && '_id' in org.parentOrganization) {
         return (org.parentOrganization as any)._id;
       }
-      
+
       // Otherwise it's already a string (MongoDB ObjectIds are serialized as strings in JSON)
       return org.parentOrganization as string;
     };
@@ -85,7 +85,7 @@ const OrganizationTree: React.FC<OrganizationTreeProps> = ({
     // Build a map to track organization levels and positions
     const orgMap = new Map<string, { org: Organization; level: number; children: string[]; parentId?: string }>();
     const rootOrgs: string[] = [];
-    
+
     // First pass: identify all organizations and their relationships
     organizations.forEach(org => {
       const parentId = getParentId(org);
@@ -108,7 +108,7 @@ const OrganizationTree: React.FC<OrganizationTreeProps> = ({
     const calculateLevels = (orgId: string, level: number = 0) => {
       const node = orgMap.get(orgId);
       if (!node) return;
-      
+
       node.level = level;
       node.children.forEach(childId => calculateLevels(childId, level + 1));
     };
@@ -141,14 +141,15 @@ const OrganizationTree: React.FC<OrganizationTreeProps> = ({
 
       nodes.push({
         id: orgId,
-        type: 'organizationNode',
-        data: { 
+        type: 'default',
+        data: {
           organization: node.org,
-          userCount 
+          label: node.org.name,
+          userCount,
         },
-        position: { 
-          x: startX + indexInLevel * horizontalSpacing, 
-          y: node.level * verticalSpacing 
+        position: {
+          x: startX + indexInLevel * horizontalSpacing,
+          y: node.level * verticalSpacing
         },
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
@@ -161,11 +162,9 @@ const OrganizationTree: React.FC<OrganizationTreeProps> = ({
           source: node.parentId,
           target: orgId,
           type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#3b82f6', strokeWidth: 2 },
+          animated: false,
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: '#3b82f6',
           },
         });
       }
@@ -220,7 +219,7 @@ const OrganizationTree: React.FC<OrganizationTreeProps> = ({
           >
             <Background color="#e5e7eb" gap={16} />
             <Controls />
-            <MiniMap 
+            <MiniMap
               nodeColor={(node) => '#60a5fa'}
               maskColor="rgba(0, 0, 0, 0.1)"
               className="bg-neutral-100"
